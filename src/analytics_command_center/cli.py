@@ -6,7 +6,15 @@ from typing import Optional
 import typer
 
 from .models import DatabaseRegistration
-from .benchmark import CHINOOK_REVENUE_QUESTION, verify_chinook_revenue_run
+from .benchmark import (
+    CHINOOK_GENRE_QUESTION,
+    CHINOOK_REVENUE_QUESTION,
+    CHINOOK_TEMPORAL_QUESTION,
+    VerificationResult,
+    verify_chinook_genre_run,
+    verify_chinook_revenue_run,
+    verify_chinook_temporal_run,
+)
 from .database import SQLiteAdapter
 from .errors import safe_live_error
 from .models import AnalysisRequest
@@ -71,28 +79,45 @@ def reset_demo() -> None:
     typer.echo("✓ Demo state reset")
 
 
-@verify_app.command("chinook-revenue")
-def verify_chinook_revenue() -> None:
-    """Run one live, billable agent pipeline and verify it against Chinook ground truth."""
+def _verify_chinook_case(question: str, verify_run) -> None:
+    """Run one live, billable agent pipeline and print its evidence-backed verdict."""
     store = config_store()
     database = store.database("chinook")
     try:
         run = analytics_service().run(
-            AnalysisRequest(user_id="toyesh", database_id="chinook", question=CHINOOK_REVENUE_QUESTION)
+            AnalysisRequest(user_id="toyesh", database_id="chinook", question=question)
         )
     except Exception as error:
         typer.echo(safe_live_error(error), err=True)
         raise typer.Exit(code=1) from None
-    verification = verify_chinook_revenue_run(run, SQLiteAdapter(database["path"]))
-    typer.echo(f"Question: {CHINOOK_REVENUE_QUESTION}")
+    verification: VerificationResult = verify_run(run, SQLiteAdapter(database["path"]))
+    typer.echo(f"Question: {question}")
     typer.echo(f"Analysis SQL: {run.analysis.sql_queries[0] if run.analysis.sql_queries else 'not available'}")
     typer.echo(f"Rows: {run.analysis.rows}")
     typer.echo(f"Chart: {run.chart_spec.chart_type if run.chart_spec else 'not available'}")
     typer.echo(f"Repair count: {run.telemetry.sql_repairs}")
-    typer.echo(f"Trace ID: {run.telemetry.trace_id}")
+    typer.echo(f"Run ID: {run.telemetry.run_id}")
     typer.echo(f"Verification: {'PASS' if verification.passed else 'FAIL'} — {verification.message}")
     if not verification.passed:
         raise typer.Exit(code=1)
+
+
+@verify_app.command("chinook-revenue")
+def verify_chinook_revenue() -> None:
+    """Verify country-ranking aggregation and bar-chart semantics against Chinook."""
+    _verify_chinook_case(CHINOOK_REVENUE_QUESTION, verify_chinook_revenue_run)
+
+
+@verify_app.command("chinook-temporal")
+def verify_chinook_temporal() -> None:
+    """Verify monthly temporal aggregation and line-chart semantics against Chinook."""
+    _verify_chinook_case(CHINOOK_TEMPORAL_QUESTION, verify_chinook_temporal_run)
+
+
+@verify_app.command("chinook-genres")
+def verify_chinook_genres() -> None:
+    """Verify join-heavy genre revenue and bar-chart semantics against Chinook."""
+    _verify_chinook_case(CHINOOK_GENRE_QUESTION, verify_chinook_genre_run)
 
 
 if __name__ == "__main__":

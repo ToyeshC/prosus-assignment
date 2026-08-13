@@ -84,7 +84,7 @@ def main() -> None:
     with details_tab:
         telemetry = result.telemetry
         st.metric("Authorization", "ALLOWED" if telemetry.acl_decision and telemetry.acl_decision.allowed else "DENIED")
-        st.write({"tables_used": telemetry.tables_used, "rows_returned": telemetry.rows_returned, "sql_repairs": telemetry.sql_repairs, "visualization": telemetry.chart_type, "trace_id": telemetry.trace_id})
+        st.write({"run_id": telemetry.run_id, "tables_used": telemetry.tables_used, "rows_returned": telemetry.rows_returned, "sql_repairs": telemetry.sql_repairs, "visualization": telemetry.chart_type})
         with st.expander("Generated SQL"):
             st.code("\n\n".join(telemetry.sql_queries) or "No query executed", language="sql")
 

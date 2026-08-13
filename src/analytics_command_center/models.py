@@ -89,7 +89,7 @@ class DatabaseRegistration(BaseModel):
 
 
 class RunTelemetry(BaseModel):
-    trace_id: str = Field(default_factory=lambda: str(uuid4()))
+    run_id: str = Field(default_factory=lambda: str(uuid4()))
     started_at: datetime = Field(default_factory=datetime.utcnow)
     ended_at: datetime | None = None
     acl_decision: AccessDecision | None = None

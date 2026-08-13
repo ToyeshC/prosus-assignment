@@ -4,7 +4,13 @@ import pytest
 
 from analytics_command_center.database import SQLiteAdapter
 from analytics_command_center.demo import DemoStateService
-from analytics_command_center.benchmark import chinook_revenue_reference
+from analytics_command_center.benchmark import (
+    chinook_genre_reference,
+    chinook_revenue_reference,
+    chinook_temporal_reference,
+    rows_match,
+    is_non_increasing,
+)
 from analytics_command_center.errors import AccessDenied, UnsafeSQL, safe_live_error
 from analytics_command_center.models import AnalysisRequest, AnalysisResult, ChartSpec, DatabaseRegistration
 from analytics_command_center.onboarding import DatabaseOnboardingService
@@ -95,3 +101,44 @@ def test_live_error_message_does_not_echo_exception_content():
     assert safe_live_error(RuntimeError("credential-like text must not be shown")) == (
         "Live agent request failed. Check connectivity and OpenAI configuration, then try again."
     )
+
+
+def test_benchmark_compares_numeric_values_with_tolerance_but_categories_exactly():
+    assert rows_match(
+        [{"country": "USA", "revenue": 523.06}],
+        [{"country": "USA", "revenue": 523.0600000000003}],
+    )
+    assert not rows_match(
+        [{"country": "USA", "revenue": 523.06}],
+        [{"country": "Canada", "revenue": 523.0600000000003}],
+    )
+    assert not rows_match(
+        [{"country": "USA", "revenue": 523.06}],
+        [{"country": "USA", "revenue": 523.07}],
+    )
+
+
+def test_benchmark_allows_tie_order_only_when_the_case_does_not_require_it():
+    expected = [{"genre": "Classical", "revenue": 40.59}, {"genre": "R&B/Soul", "revenue": 40.59}]
+    actual = [{"genre": "R&B/Soul", "revenue": 40.59}, {"genre": "Classical", "revenue": 40.59}]
+    assert not rows_match(expected, actual)
+    assert rows_match(expected, actual, order_required=False)
+    assert is_non_increasing(actual, "revenue")
+
+
+def test_default_model_is_gpt_5():
+    assert Settings(openai_api_key=None).openai_default_model == "gpt-5"
+
+
+def test_supplied_chinook_temporal_and_genre_references_are_real_and_bounded():
+    adapter = SQLiteAdapter(Path(__file__).parents[1] / "datasets" / "chinook.db")
+    monthly = chinook_temporal_reference(adapter)
+    genres = chinook_genre_reference(adapter)
+    assert len(monthly) == 60
+    assert monthly[0] == {"month": "2009-01", "revenue": 35.64}
+    assert monthly[-1] == {"month": "2013-12", "revenue": 38.62}
+    assert genres[:3] == [
+        {"genre": "Rock", "revenue": 826.65},
+        {"genre": "Latin", "revenue": 382.14},
+        {"genre": "Metal", "revenue": 261.36},
+    ]

@@ -51,3 +51,11 @@ an independent deterministic reference query.
 ```bash
 .venv/bin/analytics verify chinook-revenue
 ```
+
+The next two vertical cases are intentionally separate because they exercise different analytical
+capabilities and make real model calls:
+
+```bash
+.venv/bin/analytics verify chinook-temporal
+.venv/bin/analytics verify chinook-genres
+```
