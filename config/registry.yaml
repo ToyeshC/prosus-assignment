@@ -1,0 +1,11 @@
+databases:
+  chinook:
+    display_name: Chinook
+    adapter: sqlite
+    path: datasets/chinook.db
+    enabled: true
+  northwind:
+    display_name: Northwind
+    adapter: sqlite
+    path: datasets/northwind_small.sqlite
+    enabled: true

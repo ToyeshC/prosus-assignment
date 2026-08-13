@@ -1,0 +1,97 @@
+from pathlib import Path
+
+import pytest
+
+from analytics_command_center.database import SQLiteAdapter
+from analytics_command_center.demo import DemoStateService
+from analytics_command_center.benchmark import chinook_revenue_reference
+from analytics_command_center.errors import AccessDenied, UnsafeSQL, safe_live_error
+from analytics_command_center.models import AnalysisRequest, AnalysisResult, ChartSpec, DatabaseRegistration
+from analytics_command_center.onboarding import DatabaseOnboardingService
+from analytics_command_center.rendering import CompanyStyle, render_chart
+from analytics_command_center.service import AnalyticsService
+from analytics_command_center.settings import Settings
+from analytics_command_center.sql_safety import SafeQueryExecutor, validate_read_only_sql
+
+
+@pytest.mark.parametrize("sql", ["DELETE FROM invoice", "SELECT 1; SELECT 2", "ATTACH DATABASE 'x' AS x"])
+def test_rejects_unsafe_sql(sql):
+    with pytest.raises(UnsafeSQL):
+        validate_read_only_sql(sql)
+
+
+def test_allows_read_cte():
+    assert "WITH" in validate_read_only_sql("WITH x AS (SELECT 1 AS id) SELECT * FROM x")
+
+
+def test_executor_caps_rows(sample_db):
+    result = SafeQueryExecutor(SQLiteAdapter(sample_db), max_rows=2, timeout_seconds=1).execute("SELECT id FROM invoice ORDER BY id")
+    assert len(result.rows) == 2
+    assert result.truncated is True
+
+
+def test_catalog_discovers_columns_and_relationships(sample_db):
+    catalog = SQLiteAdapter(sample_db).schema_catalog("sample")
+    assert {table.name for table in catalog.tables} == {"customer", "invoice"}
+    assert catalog.foreign_keys[0].from_table == "invoice"
+
+
+def test_onboarding_separates_config_and_catalog(store, sample_db, tmp_path):
+    catalog = DatabaseOnboardingService(store, tmp_path / "catalogs").register(DatabaseRegistration(name="sakila", path=str(sample_db), grant_user_id="donne"))
+    assert store.authorize("donne", "sakila").allowed
+    assert (tmp_path / "catalogs" / "sakila.json").is_file()
+    assert catalog.database_id == "sakila"
+
+
+def test_denied_request_stops_before_live_agent_check(store, tmp_path):
+    service = AnalyticsService(store, tmp_path / "catalogs", Settings(openai_api_key=None))
+    with pytest.raises(AccessDenied):
+        service.run(AnalysisRequest(user_id="donne", database_id="sample", question="Show revenue"))
+
+
+def test_missing_key_has_clear_error_after_authorization(store, tmp_path):
+    service = AnalyticsService(store, tmp_path / "catalogs", Settings(openai_api_key=None))
+    with pytest.raises(RuntimeError, match="OPENAI_API_KEY"):
+        service.run(AnalysisRequest(user_id="toyesh", database_id="sample", question="Show revenue"))
+
+
+def test_renderer_uses_shared_company_tokens():
+    root = Path(__file__).parents[1]
+    analysis = AnalysisResult(database_id="sample", question="x", summary="x", columns=["country", "total"], rows=[{"country": "NL", "total": 30}])
+    figure = render_chart(analysis, ChartSpec(chart_type="bar", x="country", y="total", title="Revenue"), CompanyStyle(root / "config" / "company_style.yaml"))
+    assert figure.layout.paper_bgcolor == "#F6F3EB"
+    assert figure.layout.font.color == "#291821"
+
+
+def test_table_chart_returns_no_plot():
+    analysis = AnalysisResult(database_id="sample", question="x", summary="x")
+    assert render_chart(analysis, ChartSpec(chart_type="table", title="Data"), CompanyStyle(Path(__file__).parents[1] / "config" / "company_style.yaml")) is None
+
+
+def test_demo_reset_restores_the_canonical_pre_onboarding_state(store, tmp_path):
+    store.register_database("sakila", "datasets/sakila.db")
+    store.grant("donne", "sakila")
+    demo = DemoStateService(store, tmp_path / "catalogs")
+    assert not demo.check().is_canonical
+    assert demo.reset().is_canonical
+    assert store.accessible_databases("donne") == []
+    assert "sakila" not in store.registry()["databases"]
+
+
+def test_supplied_chinook_reference_query_has_known_top_five():
+    database = Path(__file__).parents[1] / "datasets" / "chinook.db"
+    if not database.is_file():
+        pytest.skip("Supplied Chinook database is not present")
+    assert chinook_revenue_reference(SQLiteAdapter(database)) == [
+        {"country": "USA", "revenue": 523.06},
+        {"country": "Canada", "revenue": 303.96},
+        {"country": "France", "revenue": 195.1},
+        {"country": "Brazil", "revenue": 190.1},
+        {"country": "Germany", "revenue": 156.48},
+    ]
+
+
+def test_live_error_message_does_not_echo_exception_content():
+    assert safe_live_error(RuntimeError("credential-like text must not be shown")) == (
+        "Live agent request failed. Check connectivity and OpenAI configuration, then try again."
+    )

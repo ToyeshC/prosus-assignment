@@ -1,0 +1,10 @@
+users:
+  toyesh:
+    display_name: Toyesh
+    databases: [chinook, northwind]
+  alfred:
+    display_name: Alfred
+    databases: [chinook]
+  donne:
+    display_name: Donné
+    databases: []

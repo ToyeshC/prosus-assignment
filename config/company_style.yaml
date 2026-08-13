@@ -1,0 +1,13 @@
+colors:
+  canvas: "#F6F3EB"
+  ink: "#291821"
+  muted_plum: "#934761"
+  mint: "#72BAA9"
+  surface: "#D5E7B4"
+  rose: "#AC5C71"
+fonts:
+  sans: "Arial"
+  mono: "Courier New"
+layout:
+  border_radius: 10
+  chart_height: 430
