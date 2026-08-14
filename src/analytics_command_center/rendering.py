@@ -25,10 +25,18 @@ def render_chart(analysis: AnalysisResult, spec: ChartSpec, style: CompanyStyle)
     if spec.chart_type in {"none", "table"}:
         return None
     frame = pd.DataFrame(analysis.rows, columns=analysis.columns)
+    if spec.label_fields:
+        missing = [field for field in spec.label_fields if field not in frame.columns]
+        if missing:
+            raise ValueError("Chart label fields are not present in the analysis result")
+        frame = frame.copy()
+        frame["__display_label"] = frame[spec.label_fields].fillna("").astype(str).agg(" · ".join, axis=1)
+        if spec.x in spec.label_fields:
+            spec = spec.model_copy(update={"x": "__display_label"})
     if frame.empty:
         return None
     if spec.chart_type == "bar":
-        figure = px.bar(frame, x=spec.x, y=spec.y, color_discrete_sequence=[style.colors["mint"]])
+        figure = px.bar(frame, x=spec.x, y=spec.y, color_discrete_sequence=[style.colors["mint"]], custom_data=[spec.identity_field] if spec.identity_field else None)
     elif spec.chart_type == "line":
         figure = px.line(frame, x=spec.x, y=spec.y, color_discrete_sequence=[style.colors["mint"]])
     elif spec.chart_type == "scatter":

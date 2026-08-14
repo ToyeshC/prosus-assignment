@@ -15,3 +15,4 @@ htmlcov/
 .DS_Store
 data/*.db
 catalogs/*.json
+audit/*.jsonl

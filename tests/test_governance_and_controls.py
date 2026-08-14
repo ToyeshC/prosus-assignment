@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 from analytics_command_center.agents import AnalysisAgent, SQLProposal
+from analytics_command_center.audit import JsonlAuditSink
 from analytics_command_center.database import SQLiteAdapter
 from analytics_command_center.errors import AccessDenied, UnsafeSQL
 from analytics_command_center.governance import SchemaGovernancePolicy
@@ -19,10 +20,12 @@ class FakeAnalysisAgent:
         self.propose_calls = 0
         self.repair_calls = 0
         self.last_lens = None
+        self.last_catalog = None
 
     def propose(self, question, analysis_lens, analysis_hint, catalog):
         self.propose_calls += 1
         self.last_lens = analysis_lens
+        self.last_catalog = catalog
         return self.proposals[0]
 
     def repair(self, question, proposal, error, catalog):
@@ -215,3 +218,140 @@ def test_real_analysis_agent_repair_invokes_its_wrapper_with_one_instruction(mon
     )
     assert proposal.sql == "SELECT id FROM customer LIMIT 1"
     assert len(captured) == 1
+
+
+def test_duplicate_categorical_display_values_are_disambiguated_without_merging(store, tmp_path):
+    agent = FakeAnalysisAgent([
+        SQLProposal(sql="SELECT 'Frank' AS first_name, 'Ralston' AS last_name, 1 AS customer_id, 43.62 AS total_spent UNION ALL SELECT 'Frank', 'Harris', 2, 37.62")
+    ])
+    run = service(store, tmp_path, agent).run(
+        AnalysisRequest(user_id="toyesh", database_id="sample", question="Which customers spend the most money?", visualization_hint="Bar")
+    )
+    assert run.chart_spec is not None
+    assert run.chart_spec.label_fields == ["first_name", "last_name"]
+    figure = render_chart(run.analysis, run.chart_spec, CompanyStyle(Path(__file__).parents[1] / "config" / "company_style.yaml"))
+    assert list(figure.data[0].x) == ["Frank · Ralston", "Frank · Harris"]
+
+
+def test_distribution_lens_changes_customer_observations_to_distribution_chart(store, tmp_path):
+    agent = FakeAnalysisAgent([
+        SQLProposal(sql="SELECT customer_id, total FROM (SELECT 1 AS customer_id, 10.0 AS total UNION ALL SELECT 2, 20.0)")
+    ])
+    run = service(store, tmp_path, agent).run(
+        AnalysisRequest(user_id="toyesh", database_id="sample", question="Which customers spend the most money?", analysis_lens="distribution")
+    )
+    assert run.analysis.outcome == "success"
+    assert run.analysis.analysis_lens == "distribution"
+    assert run.chart_spec is not None and run.chart_spec.chart_type == "histogram"
+
+
+def test_explicit_incompatible_lenses_are_rejected_before_agent_work(store, tmp_path):
+    agent = FakeAnalysisAgent([SQLProposal(sql="SELECT id FROM customer")])
+    svc = service(store, tmp_path, agent)
+    trend = svc.run(AnalysisRequest(user_id="toyesh", database_id="sample", question="Which customers spend the most money?", analysis_lens="trend"))
+    ranking = svc.run(AnalysisRequest(user_id="toyesh", database_id="sample", question="How has revenue changed over time?", analysis_lens="ranking"))
+    assert trend.analysis.outcome == ranking.analysis.outcome == "unsupported"
+    assert agent.propose_calls == 0
+
+
+def test_scatter_allows_temporal_or_categorical_x_with_numeric_y(store, tmp_path):
+    analysis = AnalysisResult(
+        database_id="sample", question="Revenue over time", summary="x", columns=["month", "revenue"],
+        rows=[{"month": "2024-01", "revenue": 10.0}, {"month": "2024-02", "revenue": 20.0}],
+    )
+    spec, warning = service(store, tmp_path, FakeAnalysisAgent([])).choose_visualization(analysis, "Scatter")
+    assert warning is None
+    assert spec and spec.chart_type == "scatter" and spec.x == "month" and spec.y == "revenue"
+
+
+def test_supported_custom_heatmap_and_unsupported_sankey_never_fall_back(store, tmp_path):
+    analysis = AnalysisResult(
+        database_id="sample", question="x", summary="x", columns=["country", "revenue"],
+        rows=[{"country": "NL", "revenue": 10.0}, {"country": "US", "revenue": 20.0}],
+    )
+    svc = service(store, tmp_path, FakeAnalysisAgent([]))
+    heatmap, heatmap_warning = svc.choose_visualization(analysis, "Show this as a heatmap")
+    sankey, sankey_warning = svc.choose_visualization(analysis, "Show this as a sankey diagram")
+    assert heatmap_warning is None and heatmap and heatmap.chart_type == "heatmap"
+    assert sankey is None and sankey_warning and "not currently supported" in sankey_warning
+
+
+def test_post_analysis_visualization_reuses_analysis_and_records_revision(store, tmp_path):
+    agent = FakeAnalysisAgent([SQLProposal(sql="SELECT country, total FROM invoice JOIN customer ON customer.id = invoice.customer_id")])
+    visualization = FakeVisualizationAgent()
+    svc = service(store, tmp_path, agent, visualization)
+    run = svc.run(AnalysisRequest(user_id="toyesh", database_id="sample", question="Compare revenue"))
+    changed = svc.revisualize(run, "Pie / Donut")
+    assert changed.telemetry.run_id == run.telemetry.run_id
+    assert changed.telemetry.analysis_agent_calls == 1
+    assert changed.telemetry.sql_execution_count == 1
+    assert changed.telemetry.visualization_runs == 2
+    assert changed.telemetry.analysis_reused is True
+    assert agent.propose_calls == 1 and visualization.calls == 1
+
+
+def test_filtered_aggregate_with_zero_match_count_is_typed_no_data(store, tmp_path):
+    agent = FakeAnalysisAgent([SQLProposal(sql="SELECT COUNT(*) AS matching_row_count, COALESCE(SUM(total), 0) AS revenue FROM invoice WHERE id > 999")])
+    run = service(store, tmp_path, agent).run(AnalysisRequest(user_id="toyesh", database_id="sample", question="Revenue in 2200"))
+    assert run.analysis.outcome == "no_data"
+    assert run.analysis.rows == []
+    assert "No matching" in run.analysis.summary
+
+
+def test_restricted_sql_is_typed_blocked_result_with_safe_policy_telemetry(store, tmp_path):
+    agent = FakeAnalysisAgent([SQLProposal(sql="SELECT password FROM customer")])
+    # The sample schema has no restricted field, so simulate the executor boundary through the service policy.
+    svc = service(store, tmp_path, agent)
+    from analytics_command_center.errors import UnsafeSQL
+    from analytics_command_center.sql_safety import SafeQueryExecutor
+
+    original_execute = SafeQueryExecutor.execute
+    def blocked_execute(self, sql):
+        raise UnsafeSQL("Query references a restricted column")
+    SafeQueryExecutor.execute = blocked_execute
+    try:
+        run = svc.run(AnalysisRequest(user_id="toyesh", database_id="sample", question="Show password"))
+    finally:
+        SafeQueryExecutor.execute = original_execute
+    assert run.analysis.outcome == "blocked"
+    assert run.telemetry.governance_policy == "restricted_column"
+    assert run.telemetry.sql_executed is False
+
+
+def test_all_typed_outcomes_are_preserved_by_the_coordinator(store, tmp_path):
+    success_agent = FakeAnalysisAgent([SQLProposal(sql="SELECT id FROM customer LIMIT 1")])
+    no_data_agent = FakeAnalysisAgent([SQLProposal(sql="SELECT COUNT(*) AS matching_row_count FROM customer WHERE id > 999")])
+    assert service(store, tmp_path, success_agent).run(AnalysisRequest(user_id="toyesh", database_id="sample", question="Show a customer")).analysis.outcome == "success"
+    assert service(store, tmp_path, no_data_agent).run(AnalysisRequest(user_id="toyesh", database_id="sample", question="Show future customers")).analysis.outcome == "no_data"
+    assert service(store, tmp_path, FakeAnalysisAgent([])).run(AnalysisRequest(user_id="toyesh", database_id="sample", question="Train a classifier model")).analysis.outcome == "unsupported"
+    assert service(store, tmp_path, FakeAnalysisAgent([])).run(AnalysisRequest(user_id="toyesh", database_id="sample", question="Update all invoices")).analysis.outcome == "blocked"
+
+
+def test_audit_sink_records_only_safe_governance_metadata(store, tmp_path):
+    audit_path = tmp_path / "audit" / "events.jsonl"
+    svc = AnalyticsService(
+        store, tmp_path / "catalogs", Settings(openai_api_key=None),
+        analysis_agent=FakeAnalysisAgent([]), audit_sink=JsonlAuditSink(audit_path),
+    )
+    result = svc.run(AnalysisRequest(user_id="toyesh", database_id="sample", question="Delete all invoices"))
+    event = audit_path.read_text(encoding="utf-8")
+    assert result.analysis.outcome == "blocked"
+    assert '"action": "analysis_request"' in event
+    assert '"decision": "ALLOWED"' in event
+    assert '"outcome": "blocked"' in event
+    assert "Delete all invoices" not in event
+    assert "OPENAI_API_KEY" not in event
+
+
+def test_normal_agent_context_omits_restricted_columns_but_same_table_remains_usable(store, tmp_path):
+    import sqlite3
+    staff_db = tmp_path / "staff.db"
+    with sqlite3.connect(staff_db) as connection:
+        connection.executescript("CREATE TABLE staff (staff_id INTEGER, first_name TEXT, password TEXT, revenue REAL); INSERT INTO staff VALUES (1, 'Ada', 'secret', 50.0);")
+    store.register_database("staff", str(staff_db))
+    store.grant("toyesh", "staff")
+    agent = FakeAnalysisAgent([SQLProposal(sql="SELECT staff_id, first_name, revenue FROM staff")])
+    run = service(store, tmp_path, agent).run(AnalysisRequest(user_id="toyesh", database_id="staff", question="Show staff revenue"))
+    governed_staff = next(table for table in agent.last_catalog.tables if table.name == "staff")
+    assert [column.name for column in governed_staff.columns] == ["staff_id", "first_name", "revenue"]
+    assert run.analysis.outcome == "success"

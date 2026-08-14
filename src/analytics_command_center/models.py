@@ -36,6 +36,7 @@ class AnalysisResult(BaseModel):
     database_id: str
     question: str
     analysis_type: str | None = None
+    analysis_lens: str = "auto"
     outcome: Literal["success", "no_data", "unsupported", "blocked"] = "success"
     sql_queries: list[str] = Field(default_factory=list)
     columns: list[str] = Field(default_factory=list)
@@ -57,6 +58,8 @@ class ChartSpec(BaseModel):
     y_label: str | None = None
     sort: Literal["ascending", "descending", "none"] = "none"
     notes: str | None = None
+    label_fields: list[str] = Field(default_factory=list)
+    identity_field: str | None = None
 
 
 class ColumnCatalog(BaseModel):
@@ -108,6 +111,15 @@ class RunTelemetry(BaseModel):
     truncated: bool = False
     schema_provenance: list[str] = Field(default_factory=list)
     chart_type: str | None = None
+    outcome: Literal["success", "no_data", "unsupported", "blocked"] | None = None
+    governance_policy: str | None = None
+    restricted_reference: str | None = None
+    sql_executed: bool = False
+    analysis_agent_calls: int = 0
+    sql_execution_count: int = 0
+    visualization_runs: int = 0
+    visualization_revision: int = 0
+    analysis_reused: bool = False
     warnings: list[str] = Field(default_factory=list)
 
 

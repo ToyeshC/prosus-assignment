@@ -58,5 +58,5 @@ def unsupported_visualization_requested(choice: str | None, custom_guidance: str
     if choice != "Custom…" or not custom_guidance:
         return False
     words = set(re.findall(r"[a-z]+", custom_guidance.lower()))
-    chart_words = {"chart", "plot", "graph", "map", "treemap", "violin", "waterfall", "radar"}
+    chart_words = {"chart", "plot", "graph", "map", "treemap", "violin", "waterfall", "radar", "sankey", "funnel", "bubble"}
     return bool(words & chart_words) and explicit_capability(choice, custom_guidance) is None
