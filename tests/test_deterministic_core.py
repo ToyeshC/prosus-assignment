@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from analytics_command_center.database import SQLiteAdapter
-from analytics_command_center.demo import DemoStateService
+from analytics_command_center.demo import CANONICAL_ACL, CANONICAL_REGISTRY, DemoStateService
 from analytics_command_center.benchmark import (
     chinook_genre_reference,
     chinook_revenue_reference,
@@ -83,6 +83,29 @@ def test_demo_reset_restores_the_canonical_pre_onboarding_state(store, tmp_path)
     assert demo.reset().is_canonical
     assert store.accessible_databases("donne") == []
     assert "sakila" not in store.registry()["databases"]
+
+
+def test_demo_reset_preserves_non_governance_registry_metadata(tmp_path):
+    from analytics_command_center.registry import ConfigStore
+
+    registry = {
+        "databases": {
+            **CANONICAL_REGISTRY["databases"],
+        }
+    }
+    registry["databases"]["chinook"] = {
+        **registry["databases"]["chinook"],
+        "examples": [{"label": "Top revenue", "question": "Which countries generate the most revenue?"}],
+    }
+    registry_path, acl_path = tmp_path / "registry.yaml", tmp_path / "acl.yaml"
+    import yaml
+    registry_path.write_text(yaml.safe_dump(registry, sort_keys=False))
+    acl_path.write_text(yaml.safe_dump(CANONICAL_ACL, sort_keys=False))
+    demo = DemoStateService(ConfigStore(registry_path, acl_path), tmp_path / "catalogs")
+
+    assert demo.check().is_canonical
+    assert demo.reset().is_canonical
+    assert ConfigStore(registry_path, acl_path).database("chinook")["examples"] == registry["databases"]["chinook"]["examples"]
 
 
 def test_supplied_chinook_reference_query_has_known_top_five():

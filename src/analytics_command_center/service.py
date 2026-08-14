@@ -20,6 +20,8 @@ from .visualization_capabilities import explicit_capability, unsupported_visuali
 _TEMPORAL_CUES = re.compile(r"\b(over time|trend|changed|change|monthly|quarterly|yearly|by month|by year|date)\b", re.I)
 _MUTATION_CUES = re.compile(r"\b(delete|drop|truncate|insert|update|alter|create|set\s+.+\s+to)\b", re.I)
 _MODEL_TRAINING_CUES = re.compile(r"\b(neural network|machine learning|deep learning|train(?:ing)? (?:a )?(?:model|classifier|regressor)|predict(?:ion|ive)? model|classif(?:ication|ier) model|regress(?:ion|or) model)\b", re.I)
+_TEMPORAL_FIELD_CUES = re.compile(r"(?:date|time|month|year|quarter|week|day)", re.I)
+_ENTITY_CATEGORICAL_CHARTS = frozenset({"bar", "pie", "donut", "box", "scatter", "line"})
 
 
 def request_capability_outcome(request: AnalysisRequest) -> AnalysisResult | None:
@@ -273,31 +275,53 @@ class AnalyticsService:
 
     @staticmethod
     def _with_safe_categorical_identity(analysis: AnalysisResult, spec: ChartSpec) -> tuple[ChartSpec | None, str | None]:
-        # Bar charts present one mark per returned entity. Pie/box/heatmap can legitimately
-        # aggregate repeated categories, so only entity bars require unique display labels.
-        if spec.chart_type != "bar" or not spec.x:
+        """Attach a stable ID and human-readable label to entity-like categorical results.
+
+        Chart selection is deliberately upstream of this step: Auto and explicit chart choices
+        produce a ChartSpec first, then share this deterministic semantic normalization.
+        """
+        if (
+            spec.chart_type not in _ENTITY_CATEGORICAL_CHARTS
+            or not spec.x
+            or not analysis.rows
+            or spec.x not in analysis.columns
+            or analysis.analysis_lens == "distribution"
+            or _TEMPORAL_FIELD_CUES.search(spec.x)
+        ):
             return spec, None
-        values = [row.get(spec.x) for row in analysis.rows]
-        if len(values) == len(set(map(str, values))):
+
+        identity_fields = [
+            column for column in analysis.columns
+            if column.lower().endswith("id") and len({row.get(column) for row in analysis.rows}) == len(analysis.rows)
+        ]
+        if not identity_fields or spec.x not in {*identity_fields, *[column for column in analysis.columns if any(isinstance(row.get(column), str) and row.get(column) for row in analysis.rows)]}:
             return spec, None
-        text_fields = [column for column in analysis.columns if any(isinstance(row.get(column), str) and row.get(column) for row in analysis.rows)]
-        identity_fields = [column for column in analysis.columns if column.lower().endswith("id") and len({row.get(column) for row in analysis.rows}) == len(analysis.rows)]
-        candidate_fields: list[str] | None = None
-        ordered_text = [spec.x] + [field for field in text_fields if field != spec.x]
-        for length in range(2, min(3, len(ordered_text)) + 1):
-            for fields in combinations(ordered_text, length):
-                labels = [tuple(row.get(field) for field in fields) for row in analysis.rows]
-                if len(labels) == len(set(labels)):
-                    candidate_fields = list(fields)
-                    break
-            if candidate_fields:
-                break
+
+        text_fields = [
+            column for column in analysis.columns
+            if all(isinstance(row.get(column), str) and row.get(column) for row in analysis.rows)
+        ]
+        candidate_fields = AnalyticsService._display_label_fields(text_fields, spec.x, analysis.rows)
         if candidate_fields is None:
-            unique_text = next((field for field in text_fields if len({row.get(field) for row in analysis.rows}) == len(analysis.rows)), None)
-            candidate_fields = [unique_text] if unique_text else ([spec.x, identity_fields[0]] if identity_fields else None)
-        if candidate_fields is None:
+            if spec.x in identity_fields:
+                return spec.model_copy(update={"identity_field": identity_fields[0]}), None
             return None, "Distinct entities share this chart label and no safe unique display label could be derived. The answer and data remain available."
-        return spec.model_copy(update={"label_fields": candidate_fields, "identity_field": identity_fields[0] if identity_fields else None}), None
+        return spec.model_copy(update={"label_fields": candidate_fields, "identity_field": identity_fields[0]}), None
+
+    @staticmethod
+    def _display_label_fields(text_fields: list[str], x: str, rows: list[dict]) -> list[str] | None:
+        """Prefer a concise composite label, retaining the chosen categorical field first."""
+        ordered_fields = ([x] if x in text_fields else []) + [field for field in text_fields if field != x]
+        for length in range(2, len(ordered_fields) + 1):
+            for fields in combinations(ordered_fields, length):
+                labels = [tuple(row.get(field) for field in fields) for row in rows]
+                if len(labels) == len(set(labels)):
+                    return list(fields)
+        unique_text = next(
+            (field for field in ordered_fields if len({row.get(field) for row in rows}) == len(rows)),
+            None,
+        )
+        return [unique_text] if unique_text else None
 
     @staticmethod
     def _failed_analysis(request: AnalysisRequest, telemetry: RunTelemetry) -> AnalyticsRunResult:

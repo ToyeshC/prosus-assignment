@@ -55,6 +55,13 @@ class FakeVisualizationAgent:
         return ChartSpec(chart_type="bar", x="country", y="total", title="Fake")
 
 
+class CustomerIdVisualizationAgent:
+    """Simulates Auto selecting a stable ID instead of a display field."""
+
+    def choose(self, analysis, visualization_hint):
+        return ChartSpec(chart_type="bar", x="customer_id", y="total_spent", title="Customers")
+
+
 def service(store, tmp_path, analysis, visualization=None):
     return AnalyticsService(
         store,
@@ -231,6 +238,65 @@ def test_duplicate_categorical_display_values_are_disambiguated_without_merging(
     assert run.chart_spec.label_fields == ["first_name", "last_name"]
     figure = render_chart(run.analysis, run.chart_spec, CompanyStyle(Path(__file__).parents[1] / "config" / "company_style.yaml"))
     assert list(figure.data[0].x) == ["Frank · Ralston", "Frank · Harris"]
+
+
+def test_auto_and_explicit_bar_share_entity_display_identity_and_ranking_order(store, tmp_path):
+    analysis = AnalysisResult(
+        database_id="sample", question="Which customers spend the most money?", summary="x",
+        columns=["customer_id", "first_name", "last_name", "total_spent"],
+        rows=[
+            {"customer_id": 7, "first_name": "Frank", "last_name": "Ralston", "total_spent": 43.62},
+            {"customer_id": 2, "first_name": "Frank", "last_name": "Harris", "total_spent": 37.62},
+        ],
+    )
+    svc = service(store, tmp_path, FakeAnalysisAgent([]), CustomerIdVisualizationAgent())
+    auto, auto_warning = svc.choose_visualization(analysis, "Auto")
+    explicit, explicit_warning = svc.choose_visualization(analysis, "Bar")
+    assert auto_warning is explicit_warning is None
+    assert auto and explicit
+    assert auto.label_fields == explicit.label_fields == ["first_name", "last_name"]
+    assert auto.identity_field == explicit.identity_field == "customer_id"
+    figure = render_chart(analysis, auto, CompanyStyle(Path(__file__).parents[1] / "config" / "company_style.yaml"))
+    assert list(figure.data[0].x) == ["Frank · Ralston", "Frank · Harris"]
+
+
+@pytest.mark.parametrize("chart_type", ["pie", "donut", "box", "scatter"])
+def test_entity_labels_remain_distinct_across_categorical_charts(store, tmp_path, chart_type):
+    analysis = AnalysisResult(
+        database_id="sample", question="Customer spend", summary="x",
+        columns=["customer_id", "first_name", "last_name", "total_spent"],
+        rows=[
+            {"customer_id": 7, "first_name": "Frank", "last_name": "Ralston", "total_spent": 43.62},
+            {"customer_id": 2, "first_name": "Frank", "last_name": "Harris", "total_spent": 37.62},
+        ],
+    )
+    spec, warning = service(store, tmp_path, FakeAnalysisAgent([]))._with_safe_categorical_identity(
+        analysis, ChartSpec(chart_type=chart_type, x="first_name", y="total_spent", title="Customers")
+    )
+    assert warning is None
+    assert spec and spec.label_fields == ["first_name", "last_name"]
+    figure = render_chart(analysis, spec, CompanyStyle(Path(__file__).parents[1] / "config" / "company_style.yaml"))
+    assert "Frank · Ralston" in list(figure.data[0].x if spec.chart_type not in {"pie", "donut"} else figure.data[0].labels)
+    assert "Frank · Harris" in list(figure.data[0].x if spec.chart_type not in {"pie", "donut"} else figure.data[0].labels)
+
+
+def test_entity_identity_normalization_does_not_change_distribution_or_temporal_ordering(store, tmp_path):
+    distribution = AnalysisResult(
+        database_id="sample", question="Spend distribution", summary="x", analysis_lens="distribution",
+        columns=["customer_id", "total_spent"], rows=[{"customer_id": 7, "total_spent": 43.62}, {"customer_id": 2, "total_spent": 37.62}],
+    )
+    temporal = AnalysisResult(
+        database_id="sample", question="Revenue over time", summary="x",
+        columns=["month", "revenue"], rows=[{"month": "2024-01", "revenue": 10.0}, {"month": "2024-02", "revenue": 20.0}],
+    )
+    svc = service(store, tmp_path, FakeAnalysisAgent([]))
+    histogram, histogram_warning = svc.choose_visualization(distribution, "Auto")
+    line, line_warning = svc.choose_visualization(temporal, "Line")
+    assert histogram_warning is line_warning is None
+    assert histogram and histogram.chart_type == "histogram" and histogram.label_fields == []
+    assert line and line.chart_type == "line" and line.label_fields == []
+    figure = render_chart(temporal, line, CompanyStyle(Path(__file__).parents[1] / "config" / "company_style.yaml"))
+    assert list(figure.data[0].x) == ["2024-01", "2024-02"]
 
 
 def test_distribution_lens_changes_customer_observations_to_distribution_chart(store, tmp_path):

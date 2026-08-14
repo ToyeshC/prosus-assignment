@@ -25,34 +25,37 @@ def render_chart(analysis: AnalysisResult, spec: ChartSpec, style: CompanyStyle)
     if spec.chart_type in {"none", "table"}:
         return None
     frame = pd.DataFrame(analysis.rows, columns=analysis.columns)
+    x_axis_title = spec.x_label or spec.x
+    category_orders = None
     if spec.label_fields:
         missing = [field for field in spec.label_fields if field not in frame.columns]
         if missing:
             raise ValueError("Chart label fields are not present in the analysis result")
         frame = frame.copy()
         frame["__display_label"] = frame[spec.label_fields].fillna("").astype(str).agg(" · ".join, axis=1)
-        if spec.x in spec.label_fields:
-            spec = spec.model_copy(update={"x": "__display_label"})
+        category_orders = {"__display_label": frame["__display_label"].tolist()}
+        spec = spec.model_copy(update={"x": "__display_label"})
+        x_axis_title = spec.x_label or "Category"
     if frame.empty:
         return None
     if spec.chart_type == "bar":
-        figure = px.bar(frame, x=spec.x, y=spec.y, color_discrete_sequence=[style.colors["mint"]], custom_data=[spec.identity_field] if spec.identity_field else None)
+        figure = px.bar(frame, x=spec.x, y=spec.y, color_discrete_sequence=[style.colors["mint"]], custom_data=[spec.identity_field] if spec.identity_field else None, category_orders=category_orders)
     elif spec.chart_type == "line":
-        figure = px.line(frame, x=spec.x, y=spec.y, color_discrete_sequence=[style.colors["mint"]])
+        figure = px.line(frame, x=spec.x, y=spec.y, color_discrete_sequence=[style.colors["mint"]], custom_data=[spec.identity_field] if spec.identity_field else None, category_orders=category_orders)
     elif spec.chart_type == "scatter":
-        figure = px.scatter(frame, x=spec.x, y=spec.y, color_discrete_sequence=[style.colors["mint"]])
+        figure = px.scatter(frame, x=spec.x, y=spec.y, color_discrete_sequence=[style.colors["mint"]], custom_data=[spec.identity_field] if spec.identity_field else None, category_orders=category_orders)
     elif spec.chart_type == "histogram":
         figure = px.histogram(frame, x=spec.x, color_discrete_sequence=[style.colors["mint"]])
     elif spec.chart_type == "pie":
         if spec.notes and len(frame) > 12 and isinstance(spec.y, str):
             frame = _top_categories(frame, spec.x, spec.y)
-        figure = px.pie(frame, names=spec.x, values=spec.y, color_discrete_sequence=[style.colors["mint"]])
+        figure = px.pie(frame, names=spec.x, values=spec.y, color_discrete_sequence=[style.colors["mint"]], custom_data=[spec.identity_field] if spec.identity_field else None, category_orders=category_orders)
     elif spec.chart_type == "donut":
         if spec.notes and len(frame) > 12 and isinstance(spec.y, str):
             frame = _top_categories(frame, spec.x, spec.y)
-        figure = px.pie(frame, names=spec.x, values=spec.y, hole=0.45, color_discrete_sequence=[style.colors["mint"]])
+        figure = px.pie(frame, names=spec.x, values=spec.y, hole=0.45, color_discrete_sequence=[style.colors["mint"]], custom_data=[spec.identity_field] if spec.identity_field else None, category_orders=category_orders)
     elif spec.chart_type == "box":
-        figure = px.box(frame, x=spec.x, y=spec.y, color_discrete_sequence=[style.colors["mint"]])
+        figure = px.box(frame, x=spec.x, y=spec.y, color_discrete_sequence=[style.colors["mint"]], custom_data=[spec.identity_field] if spec.identity_field else None, category_orders=category_orders)
     elif spec.chart_type == "heatmap":
         if not isinstance(spec.y, str):
             raise ValueError("Heatmaps require one y field")
@@ -67,7 +70,7 @@ def render_chart(analysis: AnalysisResult, spec: ChartSpec, style: CompanyStyle)
         font={"family": style.fonts["sans"], "color": style.colors["ink"]},
         margin={"l": 24, "r": 24, "t": 60, "b": 30},
     )
-    figure.update_xaxes(title=spec.x_label or spec.x, gridcolor=style.colors["surface"])
+    figure.update_xaxes(title=x_axis_title, gridcolor=style.colors["surface"])
     figure.update_yaxes(title=spec.y_label or spec.y, gridcolor=style.colors["surface"])
     return figure
 
