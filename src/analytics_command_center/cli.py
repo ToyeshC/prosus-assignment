@@ -10,10 +10,12 @@ from .benchmark import (
     CHINOOK_GENRE_QUESTION,
     CHINOOK_REVENUE_QUESTION,
     CHINOOK_TEMPORAL_QUESTION,
+    SAKILA_CATEGORY_REVENUE_QUESTION,
     VerificationResult,
     verify_chinook_genre_run,
     verify_chinook_revenue_run,
     verify_chinook_temporal_run,
+    verify_sakila_category_revenue_run,
 )
 from .database import SQLiteAdapter
 from .errors import safe_live_error
@@ -44,6 +46,9 @@ def add_database(
     typer.echo("✓ Read-only connection established")
     typer.echo(f"✓ Tables discovered: {len(catalog.tables)}")
     typer.echo("✓ Columns/types and primary/foreign keys discovered")
+    restricted = onboarding_service().restricted_fields(catalog)
+    if restricted:
+        typer.echo(f"⚠ Restricted fields excluded from agent schema: {', '.join(restricted)}")
     typer.echo("✓ Schema catalog created")
     typer.echo(f'✓ Registered "{name}"')
     if grant:
@@ -58,6 +63,9 @@ def catalog_database(
     """Discover and cache a schema without registering the database or changing ACLs."""
     catalog = onboarding_service().catalog(name, str(path))
     typer.echo(f"✓ Catalog written for {name}: {len(catalog.tables)} tables, {len(catalog.foreign_keys)} foreign keys")
+    restricted = onboarding_service().restricted_fields(catalog)
+    if restricted:
+        typer.echo(f"⚠ Restricted fields excluded from agent schema: {', '.join(restricted)}")
 
 
 @demo_app.command("check")
@@ -118,6 +126,24 @@ def verify_chinook_temporal() -> None:
 def verify_chinook_genres() -> None:
     """Verify join-heavy genre revenue and bar-chart semantics against Chinook."""
     _verify_chinook_case(CHINOOK_GENRE_QUESTION, verify_chinook_genre_run)
+
+
+@verify_app.command("sakila-category-revenue")
+def verify_sakila_category_revenue() -> None:
+    """After onboarding, verify Donné's unseen-schema Sakila category-revenue run."""
+    store = config_store()
+    database = store.database("sakila")
+    try:
+        run = analytics_service().run(
+            AnalysisRequest(user_id="donne", database_id="sakila", question=SAKILA_CATEGORY_REVENUE_QUESTION)
+        )
+    except Exception as error:
+        typer.echo(safe_live_error(error), err=True)
+        raise typer.Exit(code=1) from None
+    verification = verify_sakila_category_revenue_run(run, SQLiteAdapter(database["path"]))
+    typer.echo(f"Verification: {'PASS' if verification.passed else 'FAIL'} — {verification.message}")
+    if not verification.passed:
+        raise typer.Exit(code=1)
 
 
 if __name__ == "__main__":

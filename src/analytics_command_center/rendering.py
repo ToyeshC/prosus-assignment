@@ -8,6 +8,7 @@ import plotly.graph_objects as go
 import yaml
 
 from .models import AnalysisResult, ChartSpec
+from .visualization_capabilities import CAPABILITY_IDS
 
 
 class CompanyStyle:
@@ -19,6 +20,8 @@ class CompanyStyle:
 
 
 def render_chart(analysis: AnalysisResult, spec: ChartSpec, style: CompanyStyle) -> go.Figure | None:
+    if spec.chart_type not in CAPABILITY_IDS:
+        raise ValueError(f"Unsupported chart type: {spec.chart_type}")
     if spec.chart_type in {"none", "table"}:
         return None
     frame = pd.DataFrame(analysis.rows, columns=analysis.columns)
@@ -32,6 +35,20 @@ def render_chart(analysis: AnalysisResult, spec: ChartSpec, style: CompanyStyle)
         figure = px.scatter(frame, x=spec.x, y=spec.y, color_discrete_sequence=[style.colors["mint"]])
     elif spec.chart_type == "histogram":
         figure = px.histogram(frame, x=spec.x, color_discrete_sequence=[style.colors["mint"]])
+    elif spec.chart_type == "pie":
+        if spec.notes and len(frame) > 12 and isinstance(spec.y, str):
+            frame = _top_categories(frame, spec.x, spec.y)
+        figure = px.pie(frame, names=spec.x, values=spec.y, color_discrete_sequence=[style.colors["mint"]])
+    elif spec.chart_type == "donut":
+        if spec.notes and len(frame) > 12 and isinstance(spec.y, str):
+            frame = _top_categories(frame, spec.x, spec.y)
+        figure = px.pie(frame, names=spec.x, values=spec.y, hole=0.45, color_discrete_sequence=[style.colors["mint"]])
+    elif spec.chart_type == "box":
+        figure = px.box(frame, x=spec.x, y=spec.y, color_discrete_sequence=[style.colors["mint"]])
+    elif spec.chart_type == "heatmap":
+        if not isinstance(spec.y, str):
+            raise ValueError("Heatmaps require one y field")
+        figure = px.density_heatmap(frame, x=spec.x, y=spec.y, color_continuous_scale=[style.colors["canvas"], style.colors["mint"]])
     else:
         raise ValueError(f"Unsupported chart type: {spec.chart_type}")
     figure.update_layout(
@@ -45,3 +62,14 @@ def render_chart(analysis: AnalysisResult, spec: ChartSpec, style: CompanyStyle)
     figure.update_xaxes(title=spec.x_label or spec.x, gridcolor=style.colors["surface"])
     figure.update_yaxes(title=spec.y_label or spec.y, gridcolor=style.colors["surface"])
     return figure
+
+
+def _top_categories(frame: pd.DataFrame, category: str | None, value: str) -> pd.DataFrame:
+    if not category:
+        return frame
+    ordered = frame.sort_values(value, ascending=False)
+    top = ordered.head(11).copy()
+    remainder = ordered.iloc[11:]
+    if not remainder.empty:
+        top.loc[len(top)] = {category: "Other", value: remainder[value].sum()}
+    return top

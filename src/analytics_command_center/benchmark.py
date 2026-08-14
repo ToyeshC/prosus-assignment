@@ -53,6 +53,23 @@ ORDER BY revenue DESC, genre ASC
 LIMIT 10
 """
 
+SAKILA_CATEGORY_REVENUE_QUESTION = (
+    "Which film categories generated the most payment revenue? Return exactly the columns category and revenue, "
+    "ranked from highest to lowest revenue."
+)
+SAKILA_CATEGORY_REVENUE_REFERENCE_SQL = """
+SELECT
+  c.name AS category,
+  ROUND(SUM(p.amount), 2) AS revenue
+FROM payment AS p
+JOIN rental AS r ON r.rental_id = p.rental_id
+JOIN inventory AS i ON i.inventory_id = r.inventory_id
+JOIN film_category AS fc ON fc.film_id = i.film_id
+JOIN category AS c ON c.category_id = fc.category_id
+GROUP BY c.category_id, c.name
+ORDER BY revenue DESC, category ASC
+"""
+
 
 @dataclass(frozen=True)
 class VerificationResult:
@@ -121,6 +138,10 @@ def chinook_genre_reference(adapter: SQLiteAdapter) -> list[dict]:
     return chinook_reference(adapter, CHINOOK_GENRE_REFERENCE_SQL)
 
 
+def sakila_category_revenue_reference(adapter: SQLiteAdapter) -> list[dict]:
+    return chinook_reference(adapter, SAKILA_CATEGORY_REVENUE_REFERENCE_SQL)
+
+
 def verify_chinook_run(
     run: AnalyticsRunResult,
     expected_rows: list[dict[str, Any]],
@@ -182,5 +203,18 @@ def verify_chinook_genre_run(run: AnalyticsRunResult, adapter: SQLiteAdapter) ->
         "revenue",
         "genre revenue",
         order_required=False,
+        ranking_column="revenue",
+    )
+
+
+def verify_sakila_category_revenue_run(run: AnalyticsRunResult, adapter: SQLiteAdapter) -> VerificationResult:
+    return verify_chinook_run(
+        run,
+        sakila_category_revenue_reference(adapter),
+        ["category", "revenue"],
+        "bar",
+        "category",
+        "revenue",
+        "Sakila category revenue",
         ranking_column="revenue",
     )

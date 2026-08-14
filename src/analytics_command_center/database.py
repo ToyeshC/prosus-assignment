@@ -85,6 +85,7 @@ class SQLiteAdapter:
             columns=[item[0] for item in cursor.description or []],
             rows=[dict(row) for row in rows],
             truncated=truncated,
+            row_limit=limit,
             elapsed_ms=round((time.perf_counter() - started) * 1000, 2),
         )
 

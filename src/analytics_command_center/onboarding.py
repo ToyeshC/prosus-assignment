@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 from .database import SQLiteAdapter
+from .governance import SchemaGovernancePolicy
 from .models import DatabaseRegistration, SchemaCatalog
 from .registry import ConfigStore
 
@@ -12,6 +13,7 @@ class DatabaseOnboardingService:
     def __init__(self, config_store: ConfigStore, catalog_directory: Path):
         self.config_store = config_store
         self.catalog_directory = catalog_directory
+        self.schema_policy = SchemaGovernancePolicy()
 
     def register(self, request: DatabaseRegistration) -> SchemaCatalog:
         catalog = self.catalog(request.name, request.path)
@@ -20,6 +22,10 @@ class DatabaseOnboardingService:
             self.config_store.grant(request.grant_user_id, request.name)
 
         return catalog
+
+    def restricted_fields(self, catalog: SchemaCatalog) -> list[str]:
+        """Safe onboarding report; values are never inspected."""
+        return self.schema_policy.restricted_fields(catalog)
 
     def catalog(self, database_id: str, path: str) -> SchemaCatalog:
         """Create generated discovery metadata without changing registry or ACL state."""

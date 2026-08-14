@@ -11,6 +11,7 @@ class AnalysisRequest(BaseModel):
     user_id: str
     database_id: str
     question: str = Field(min_length=1)
+    analysis_lens: Literal["auto", "ranking", "trend", "compare", "distribution", "relationship", "custom"] = "auto"
     analysis_hint: str | None = None
     visualization_hint: str | None = None
 
@@ -26,6 +27,7 @@ class QueryResult(BaseModel):
     columns: list[str]
     rows: list[dict[str, Any]]
     truncated: bool = False
+    row_limit: int | None = None
     elapsed_ms: float = 0.0
 
 
@@ -34,6 +36,7 @@ class AnalysisResult(BaseModel):
     database_id: str
     question: str
     analysis_type: str | None = None
+    outcome: Literal["success", "no_data", "unsupported", "blocked"] = "success"
     sql_queries: list[str] = Field(default_factory=list)
     columns: list[str] = Field(default_factory=list)
     rows: list[dict[str, Any]] = Field(default_factory=list)
@@ -41,10 +44,12 @@ class AnalysisResult(BaseModel):
     tables_used: list[str] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
     row_count: int = 0
+    truncated: bool = False
+    row_limit: int | None = None
 
 
 class ChartSpec(BaseModel):
-    chart_type: Literal["bar", "line", "scatter", "histogram", "table", "none"]
+    chart_type: str
     x: str | None = None
     y: str | list[str] | None = None
     title: str
@@ -99,6 +104,9 @@ class RunTelemetry(BaseModel):
     sql_queries: list[str] = Field(default_factory=list)
     sql_repairs: int = 0
     rows_returned: int = 0
+    row_limit: int | None = None
+    truncated: bool = False
+    schema_provenance: list[str] = Field(default_factory=list)
     chart_type: str | None = None
     warnings: list[str] = Field(default_factory=list)
 

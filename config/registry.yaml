@@ -4,8 +4,20 @@ databases:
     adapter: sqlite
     path: datasets/chinook.db
     enabled: true
+    examples:
+    - label: 🌍 Top revenue
+      question: Which five countries generate the most revenue?
+    - label: 📈 Trend
+      question: How has revenue changed over time?
+    - label: 🎵 Genres
+      question: Which music genres generate the most revenue?
   northwind:
     display_name: Northwind
     adapter: sqlite
     path: datasets/northwind_small.sqlite
     enabled: true
+    examples:
+    - label: 💰 Category sales
+      question: Which product categories generated the most sales?
+    - label: 📦 Orders over time
+      question: How have orders changed over time?

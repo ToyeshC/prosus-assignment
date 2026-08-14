@@ -8,6 +8,7 @@ from analytics_command_center.benchmark import (
     chinook_genre_reference,
     chinook_revenue_reference,
     chinook_temporal_reference,
+    sakila_category_revenue_reference,
     rows_match,
     is_non_increasing,
 )
@@ -142,3 +143,12 @@ def test_supplied_chinook_temporal_and_genre_references_are_real_and_bounded():
         {"genre": "Latin", "revenue": 382.14},
         {"genre": "Metal", "revenue": 261.36},
     ]
+
+
+def test_supplied_sakila_category_revenue_reference_is_real():
+    database = Path(__file__).parents[1] / "datasets" / "sakila.db"
+    if not database.is_file():
+        pytest.skip("Supplied Sakila database is not present")
+    rows = sakila_category_revenue_reference(SQLiteAdapter(database))
+    assert len(rows) == 16
+    assert rows[0]["revenue"] >= rows[-1]["revenue"]
