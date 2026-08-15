@@ -32,67 +32,76 @@ st.markdown(
     f"""<style>
     .stApp {{
       background-color: {COLORS['canvas']};
-      background-image: radial-gradient(circle at 1px 1px, rgba(22, 24, 29, .055) 1px, transparent 1.1px);
-      background-size: 18px 18px;
+      background-image: radial-gradient(circle at 1px 1px, {COLORS['dot']} 1px, transparent 1.1px);
+      background-size: 20px 20px;
       color: {COLORS['ink']};
     }}
-    .block-container {{ max-width: 1320px; padding-top: 2rem; padding-bottom: 3rem; }}
+    .block-container {{ max-width: 980px; padding-top: 2.4rem; padding-bottom: 3.5rem; }}
     h1, h2, h3, p, label {{ color: {COLORS['ink']}; font-family: {STYLE_CONFIG['fonts']['sans']}; }}
     [data-testid='stSidebar'] {{ display: none; }}
     [data-testid='stHeader'] {{ background: transparent; }}
-    .workspace-brand {{ font-size: .95rem; font-weight: 700; letter-spacing: -.02em; margin: 0; }}
+    .workspace-brand {{ font-size: .9rem; font-weight: 700; letter-spacing: -.02em; margin: 0; }}
     .workspace-subtitle {{ display: none; }}
     [data-testid='stPopoverButton'] > button {{
-      min-height: 32px;
+      min-height: 34px;
       border: 1px solid {COLORS['border']};
       border-radius: {STYLE_CONFIG['layout']['border_radius']}px;
       background: rgba(255, 255, 255, .76);
-      color: #344054;
-      font-size: .8rem;
+      color: {COLORS['control_ink']};
+      font-size: .78rem;
       font-weight: 500;
       transition: transform 180ms cubic-bezier(.16, 1, .3, 1), border-color 180ms cubic-bezier(.16, 1, .3, 1), background 180ms cubic-bezier(.16, 1, .3, 1);
     }}
     [data-testid='stPopoverButton'] > button:hover, [data-testid='stPopoverButton'] > button:focus-visible {{
       transform: translateY(-1px);
-      border-color: #B6C8E9;
+      border-color: {COLORS['accent_border']};
       background: {COLORS['surface']};
     }}
     .scope-context {{ color: {COLORS['muted']}; font-size: .88rem; margin: .2rem 0 1.15rem; }}
-    .st-key-starting-surface {{ max-width: 760px; margin: 4.5rem auto 0; padding-top: 1.5rem; border-top: 1px solid {COLORS['border']}; }}
+    .st-key-starting-surface {{ max-width: 815px; margin: 4.35rem auto 0; padding-top: 1.4rem; border-top: 1px solid {COLORS['border']}; }}
     .st-key-starting-surface p {{ margin: 0 0 1rem; }}
-    .st-key-starting-surface .starting-title {{ font-size: 1rem; font-weight: 600; }}
-    .st-key-starting-surface .starting-copy, .example-intro {{ color: {COLORS['muted']}; font-size: .9rem; }}
+    .st-key-starting-surface .starting-title {{ font-size: 1.06rem; font-weight: 650; letter-spacing: -.025em; }}
+    .st-key-starting-surface .starting-copy, .example-intro {{ color: {COLORS['muted']}; font-size: .82rem; }}
     .empty-workspace {{ max-width: 34rem; margin: 6rem auto; text-align: center; }}
     .empty-workspace h2 {{ font-size: 1.4rem; font-weight: 600; margin-bottom: .35rem; }}
     .empty-workspace p {{ color: {COLORS['muted']}; line-height: 1.55; }}
     .empty-workspace .empty-support {{ margin-top: .65rem; font-size: .9rem; }}
-    .database-prompt {{ margin: 5.25rem auto 0; max-width: 620px; color: {COLORS['muted']}; }}
-    .database-prompt strong {{ color: {COLORS['ink']}; font-weight: 600; }}
-    .st-key-source-selection {{ max-width: 620px; margin: 1.25rem auto 0; border-top: 1px solid {COLORS['border']}; }}
-    .st-key-source-selection [data-testid='stButton'] button {{ border: 0; border-bottom: 1px solid {COLORS['border']}; border-radius: 0; background: transparent; color: {COLORS['ink']}; justify-content: flex-start; padding: .9rem 0; transition: transform 180ms cubic-bezier(.16, 1, .3, 1), color 180ms cubic-bezier(.16, 1, .3, 1), border-color 180ms cubic-bezier(.16, 1, .3, 1); }}
-    .st-key-source-selection [data-testid='stButton'] button:hover, .st-key-source-selection [data-testid='stButton'] button:focus-visible {{ background: transparent; color: {COLORS['accent']}; border-bottom-color: #A9BEE6; transform: translateX(4px); }}
-    [data-testid='stForm'] {{ border: 0; padding: 0; }}
-    [data-testid='stTextInput'] input {{ height: 42px; border-color: #D5DAE2; border-radius: {STYLE_CONFIG['layout']['border_radius']}px; background: rgba(255, 255, 255, .84); }}
+    .database-prompt {{ margin: 4.8rem auto 0; max-width: 680px; color: {COLORS['muted']}; }}
+    .database-prompt strong {{ color: {COLORS['ink']}; font-size: 1.06rem; font-weight: 650; letter-spacing: -.025em; }}
+    .st-key-source-selection {{ max-width: 680px; margin: 1.2rem auto 0; border-top: 1px solid {COLORS['border']}; }}
+    .st-key-source-selection [data-testid='stButton'] button {{ border: 0; border-bottom: 1px solid {COLORS['border']}; border-radius: 0; background: transparent; color: {COLORS['ink']}; justify-content: space-between; padding: .88rem 0; text-align: left; font-size: .88rem; font-weight: 600; transition: transform 180ms cubic-bezier(.16, 1, .3, 1), color 180ms cubic-bezier(.16, 1, .3, 1), border-color 180ms cubic-bezier(.16, 1, .3, 1); }}
+    .st-key-source-selection [data-testid='stButton'] button [data-testid='stMarkdownContainer'] {{ width: 100%; text-align: left; }}
+    .st-key-source-selection [data-testid='stButton'] button::after {{ content: '→'; color: {COLORS['ink']}; font-size: 1.12rem; font-weight: 400; }}
+    .st-key-source-selection [data-testid='stButton'] button:hover, .st-key-source-selection [data-testid='stButton'] button:focus-visible {{ background: transparent; color: {COLORS['accent']}; border-bottom-color: {COLORS['accent_muted']}; transform: translateX(4px); }}
+    .st-key-source-selection [data-testid='stButton'] button:hover::after {{ color: {COLORS['accent']}; transform: translateX(3px); }}
+    [data-testid='stTextInput'] input {{ height: 42px; border-color: {COLORS['control_border']}; border-radius: {STYLE_CONFIG['layout']['border_radius']}px; background: rgba(255, 255, 255, .84); color: {COLORS['ink']}; font-size: .82rem; }}
     [data-testid='stTextInput'] input:focus {{ border-color: {COLORS['accent']}; box-shadow: 0 0 0 1px {COLORS['accent']}; }}
-    [data-testid='stFormSubmitButton'] button, [data-testid='stButton'] button {{ min-height: 42px; border-radius: {STYLE_CONFIG['layout']['border_radius']}px; box-shadow: none; transition: transform 150ms cubic-bezier(.16, 1, .3, 1), border-color 150ms cubic-bezier(.16, 1, .3, 1), background 150ms cubic-bezier(.16, 1, .3, 1); }}
-    [data-testid='stFormSubmitButton'] button:active {{ transform: translateY(1px) scale(.985); }}
+    [data-testid='stButton'] button {{ min-height: 42px; border-radius: {STYLE_CONFIG['layout']['border_radius']}px; box-shadow: none; transition: transform 150ms cubic-bezier(.16, 1, .3, 1), border-color 150ms cubic-bezier(.16, 1, .3, 1), background 150ms cubic-bezier(.16, 1, .3, 1); }}
+    [data-testid='stButton'] button:active {{ transform: translateY(1px) scale(.985); }}
+    .st-key-query-composer [data-testid='stButton'] button {{ min-height: 42px; color: {COLORS['control_ink']}; font-size: .82rem; font-weight: 600; }}
+    .st-key-query-composer [data-testid='stButton'] button[kind='primary'] {{ background: {COLORS['accent']}; border-color: {COLORS['accent']}; color: {COLORS['surface']}; }}
     [data-testid='stTabs'] [data-baseweb='tab-list'] {{ gap: 1.25rem; border-bottom: 1px solid {COLORS['border']}; }}
     [data-testid='stTabs'] [data-baseweb='tab'] {{ padding-left: 0; padding-right: 0; }}
     [data-testid='stPlotlyChart'], [data-testid='stPlotlyChart'] > div {{ background: transparent; border: 0; box-shadow: none; }}
-    .st-key-example-row {{ margin-top: .9rem; }}
-    .st-key-example-row [data-testid='stButton'] button {{ min-height: 0; border: 0; padding: 0; color: {COLORS['muted']}; background: transparent; font-size: .82rem; }}
+    .st-key-example-row {{ margin-top: 1rem; }}
+    .st-key-example-row [data-testid='stHorizontalBlock'] {{ justify-content: flex-start; gap: 15px; }}
+    .st-key-example-row [data-testid='stColumn'] {{ flex: 0 0 auto !important; width: auto !important; min-width: 0 !important; }}
+    .st-key-example-row [data-testid='stButton'] button {{ min-height: 0; border: 0; padding: 0; color: {COLORS['muted']}; background: transparent; font-size: .76rem; }}
     .st-key-example-row [data-testid='stButton'] button:hover {{ color: {COLORS['accent']}; background: transparent; }}
     .analysis-loading {{ min-height: 28rem; display: grid; place-items: center; text-align: center; }}
     .analysis-loading-mark {{ position: relative; display: block; width: 38px; height: 38px; margin: 0 auto 1.15rem; }}
-    .analysis-loading-mark::before, .analysis-loading-mark::after {{ content: ''; position: absolute; border: 1.5px solid #9EB7E5; border-radius: 50%; }}
+    .analysis-loading-mark::before, .analysis-loading-mark::after {{ content: ''; position: absolute; border: 1.5px solid {COLORS['accent_faint']}; border-radius: 50%; }}
     .analysis-loading-mark::before {{ inset: 2px; }}
     .analysis-loading-mark::after {{ inset: 9px; border-color: {COLORS['accent']}; border-top-color: transparent; animation: analysis-orbit 1.5s linear infinite; }}
     .analysis-loading-mark {{ background: radial-gradient(circle at center, {COLORS['accent']} 0 5px, transparent 5.5px); animation: analysis-breathe 1.5s cubic-bezier(.16, 1, .3, 1) infinite alternate; }}
     .analysis-loading h2 {{ margin: 0; font-size: 1.2rem; letter-spacing: -.025em; font-weight: 650; }}
     .analysis-loading p {{ margin: .3rem 0 0; color: {COLORS['muted']}; font-size: .84rem; }}
-    .st-key-result-workspace {{ max-width: 960px; margin: 2.75rem auto 0; }}
-    .st-key-result-workspace [data-testid='stMarkdown'] p:first-child {{ max-width: 760px; margin: 0; font-size: 1.55rem; line-height: 1.32; letter-spacing: -.028em; font-weight: 650; }}
-    .st-key-result-workspace .scope-context {{ margin-top: .6rem; margin-bottom: 1.7rem; font-size: .82rem; }}
+    .st-key-result-workspace {{ max-width: 815px; margin: 3rem auto 0; }}
+    .st-key-answer-summary [data-testid='stMarkdownContainer'] > :first-child {{ max-width: 650px; margin-top: 0; font-size: 1.55rem; line-height: 1.28; letter-spacing: -.03em; font-weight: 650; }}
+    .st-key-answer-summary [data-testid='stMarkdownContainer'] p {{ max-width: 650px; line-height: 1.55; }}
+    .st-key-answer-summary [data-testid='stMarkdownContainer'] ul {{ margin-top: .7rem; padding-left: 1.25rem; }}
+    .st-key-result-workspace .scope-context {{ margin-top: .55rem; margin-bottom: 1.45rem; color: {COLORS['muted']}; font-size: .76rem; font-weight: 500; }}
+    .st-key-result-workspace .scope-context strong {{ color: {COLORS['control_ink']}; font-weight: 650; }}
     @keyframes analysis-orbit {{ to {{ transform: rotate(360deg); }} }}
     @keyframes analysis-breathe {{ to {{ transform: scale(.76); opacity: .7; }} }}
     @media (prefers-reduced-motion: reduce) {{
@@ -153,10 +162,10 @@ def _example_label(label: str) -> str:
 
 def _render_header(store, user_id: str, grants: list[str]) -> None:
     user = store.user(user_id)
-    brand, _, user_slot, database_slot = st.columns([7, 1, 2, 2])
+    brand, _, user_slot, database_slot = st.columns([5.5, 1.1, 1.7, 1.7])
     with brand:
         st.markdown("<p class='workspace-brand'>Analytics Command Center</p>", unsafe_allow_html=True)
-    with user_slot, st.popover(f"●  {_initials(user['display_name'])}  {user['display_name']}  ▾", width="stretch"):
+    with user_slot, st.popover(f"{user['display_name']}  ▾", width="stretch"):
         st.caption("Switch demo user")
         for candidate_id, candidate in store.acl()["users"].items():
             active = candidate_id == user_id
@@ -273,11 +282,8 @@ def _render_query(user_id: str, database: dict) -> None:
                 "<p class='starting-title'>Start with a question</p><p class='starting-copy'>Ask for a comparison, trend, or ranking from the selected source.</p>",
                 unsafe_allow_html=True,
             )
-        query_column, options_column = st.columns([8, 1])
-        with options_column:
-            _render_options()
-        with query_column, st.form("analysis_request", clear_on_submit=False):
-            question_column, run_column = st.columns([8, 1])
+        with st.container(key="query-composer"):
+            question_column, options_column, run_column = st.columns([8, 1.35, 1])
             with question_column:
                 st.text_input(
                     "Ask your data",
@@ -285,8 +291,10 @@ def _render_query(user_id: str, database: dict) -> None:
                     placeholder=f"Ask a question about {database['display_name']}…",
                     label_visibility="collapsed",
                 )
+            with options_column:
+                _render_options()
             with run_column:
-                submitted = st.form_submit_button("Run", type="primary", width="stretch")
+                submitted = st.button("Run", type="primary", width="stretch", key="run_analysis")
         _render_examples(database)
     if submitted:
         _submit_request(user_id, database["id"], database["display_name"])
@@ -297,7 +305,7 @@ def _render_source_selection(store, grants: list[str]) -> None:
     with st.container(key="source-selection"):
         for database_id in grants:
             database = store.database(database_id)
-            if st.button(f"{database['display_name']}  →", key=f"source_{database_id}", width="stretch"):
+            if st.button(database["display_name"], key=f"source_{database_id}", width="stretch"):
                 _select_database(database_id)
                 st.rerun()
 
@@ -324,9 +332,10 @@ def _render_result(database: dict) -> None:
     with st.container(key="result-workspace"):
         answer_tab, data_tab, details_tab = st.tabs(["Answer", "Data", "Run details"])
         with answer_tab:
-            st.write(result.analysis.summary)
+            with st.container(key="answer-summary"):
+                st.write(result.analysis.summary)
             st.markdown(
-                f"<p class='scope-context'>{database['display_name']} · {format_result_scope(result.analysis, result.chart_spec)}</p>",
+                f"<p class='scope-context'><strong>{database['display_name']}</strong> · {format_result_scope(result.analysis, result.chart_spec)}</p>",
                 unsafe_allow_html=True,
             )
             if result.chart_spec:

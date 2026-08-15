@@ -42,6 +42,7 @@ def render_chart(analysis: AnalysisResult, spec: ChartSpec, style: CompanyStyle)
         x_axis_title = spec.x_label or "Category"
     if frame.empty:
         return None
+    _validate_chart_spec_for_frame(spec, frame)
     if spec.chart_type == "bar":
         figure = px.bar(frame, x=spec.x, y=spec.y, color_discrete_sequence=[style.colors["accent"]], custom_data=[spec.identity_field] if spec.identity_field else None, category_orders=category_orders)
     elif spec.chart_type == "line":
@@ -129,6 +130,18 @@ def _numeric_tick_format(spec: ChartSpec) -> str:
 
 def _is_numeric_column(frame: pd.DataFrame, column: str | list[str] | None) -> bool:
     return isinstance(column, str) and column in frame.columns and pd.api.types.is_numeric_dtype(frame[column])
+
+
+def _validate_chart_spec_for_frame(spec: ChartSpec, frame: pd.DataFrame) -> None:
+    """Reject malformed categorical chart mappings without guessing a replacement."""
+    if spec.chart_type not in {"bar", "pie", "donut", "box"}:
+        return
+    if not isinstance(spec.x, str) or not isinstance(spec.y, str):
+        raise TypeError(f"A {spec.chart_type} chart requires a categorical x field and a numeric y field")
+    if spec.x not in frame.columns or spec.y not in frame.columns:
+        raise ValueError("Chart fields are not present in the analysis result")
+    if _is_numeric_column(frame, spec.x) or not _is_numeric_column(frame, spec.y):
+        raise ValueError(f"A {spec.chart_type} chart requires a categorical x field and a numeric y field")
 
 
 def _apply_hover_format(

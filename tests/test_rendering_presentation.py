@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from analytics_command_center.models import AnalysisResult, ChartSpec
 from analytics_command_center.rendering import CompanyStyle, render_chart
 
@@ -60,3 +62,23 @@ def test_pie_retains_existing_top_categories_and_other_policy():
     assert len(figure.data[0].labels) == 12
     assert "Other" in figure.data[0].labels
     assert len(analysis.rows) == 25
+
+
+def test_renderer_rejects_malformed_categorical_chart_without_reinterpreting_data():
+    analysis = _analysis(
+        columns=["country", "revenue"],
+        rows=[{"country": "USA", "revenue": 523.06}, {"country": "Canada", "revenue": 303.96}],
+    )
+    malformed = ChartSpec(
+        chart_type="bar",
+        x="revenue",
+        y="revenue",
+        title="Top countries by revenue",
+        x_label="Country",
+        y_label="Revenue (USD)",
+    )
+
+    with pytest.raises(ValueError, match="categorical x field and a numeric y field"):
+        render_chart(analysis, malformed, _style())
+
+    assert analysis.rows[0] == {"country": "USA", "revenue": 523.06}
