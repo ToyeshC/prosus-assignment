@@ -39,39 +39,39 @@ def render_chart(analysis: AnalysisResult, spec: ChartSpec, style: CompanyStyle)
     if frame.empty:
         return None
     if spec.chart_type == "bar":
-        figure = px.bar(frame, x=spec.x, y=spec.y, color_discrete_sequence=[style.colors["mint"]], custom_data=[spec.identity_field] if spec.identity_field else None, category_orders=category_orders)
+        figure = px.bar(frame, x=spec.x, y=spec.y, color_discrete_sequence=[style.colors["accent"]], custom_data=[spec.identity_field] if spec.identity_field else None, category_orders=category_orders)
     elif spec.chart_type == "line":
-        figure = px.line(frame, x=spec.x, y=spec.y, color_discrete_sequence=[style.colors["mint"]], custom_data=[spec.identity_field] if spec.identity_field else None, category_orders=category_orders)
+        figure = px.line(frame, x=spec.x, y=spec.y, color_discrete_sequence=[style.colors["accent"]], custom_data=[spec.identity_field] if spec.identity_field else None, category_orders=category_orders)
     elif spec.chart_type == "scatter":
-        figure = px.scatter(frame, x=spec.x, y=spec.y, color_discrete_sequence=[style.colors["mint"]], custom_data=[spec.identity_field] if spec.identity_field else None, category_orders=category_orders)
+        figure = px.scatter(frame, x=spec.x, y=spec.y, color_discrete_sequence=[style.colors["accent"]], custom_data=[spec.identity_field] if spec.identity_field else None, category_orders=category_orders)
     elif spec.chart_type == "histogram":
-        figure = px.histogram(frame, x=spec.x, color_discrete_sequence=[style.colors["mint"]])
+        figure = px.histogram(frame, x=spec.x, color_discrete_sequence=[style.colors["accent"]])
     elif spec.chart_type == "pie":
         if spec.notes and len(frame) > 12 and isinstance(spec.y, str):
             frame = _top_categories(frame, spec.x, spec.y)
-        figure = px.pie(frame, names=spec.x, values=spec.y, color_discrete_sequence=[style.colors["mint"]], custom_data=[spec.identity_field] if spec.identity_field else None, category_orders=category_orders)
+        figure = px.pie(frame, names=spec.x, values=spec.y, color_discrete_sequence=[style.colors["accent"]], custom_data=[spec.identity_field] if spec.identity_field else None, category_orders=category_orders)
     elif spec.chart_type == "donut":
         if spec.notes and len(frame) > 12 and isinstance(spec.y, str):
             frame = _top_categories(frame, spec.x, spec.y)
-        figure = px.pie(frame, names=spec.x, values=spec.y, hole=0.45, color_discrete_sequence=[style.colors["mint"]], custom_data=[spec.identity_field] if spec.identity_field else None, category_orders=category_orders)
+        figure = px.pie(frame, names=spec.x, values=spec.y, hole=0.45, color_discrete_sequence=[style.colors["accent"]], custom_data=[spec.identity_field] if spec.identity_field else None, category_orders=category_orders)
     elif spec.chart_type == "box":
-        figure = px.box(frame, x=spec.x, y=spec.y, color_discrete_sequence=[style.colors["mint"]], custom_data=[spec.identity_field] if spec.identity_field else None, category_orders=category_orders)
+        figure = px.box(frame, x=spec.x, y=spec.y, color_discrete_sequence=[style.colors["accent"]], custom_data=[spec.identity_field] if spec.identity_field else None, category_orders=category_orders)
     elif spec.chart_type == "heatmap":
         if not isinstance(spec.y, str):
             raise ValueError("Heatmaps require one y field")
-        figure = px.density_heatmap(frame, x=spec.x, y=spec.y, color_continuous_scale=[style.colors["canvas"], style.colors["mint"]])
+        figure = px.density_heatmap(frame, x=spec.x, y=spec.y, color_continuous_scale=[style.colors["surface"], style.colors["accent"]])
     else:
         raise ValueError(f"Unsupported chart type: {spec.chart_type}")
     figure.update_layout(
         title=spec.title,
         height=style.layout["chart_height"],
-        paper_bgcolor=style.colors["canvas"],
-        plot_bgcolor=style.colors["canvas"],
+        paper_bgcolor=style.colors["surface"],
+        plot_bgcolor=style.colors["surface"],
         font={"family": style.fonts["sans"], "color": style.colors["ink"]},
         margin={"l": 24, "r": 24, "t": 60, "b": 30},
     )
-    figure.update_xaxes(title=x_axis_title, gridcolor=style.colors["surface"])
-    figure.update_yaxes(title=spec.y_label or spec.y, gridcolor=style.colors["surface"])
+    figure.update_xaxes(title=x_axis_title, gridcolor=style.colors["grid"], zerolinecolor=style.colors["grid"])
+    figure.update_yaxes(title=spec.y_label or spec.y, gridcolor=style.colors["grid"], zerolinecolor=style.colors["grid"])
     return figure
 
 

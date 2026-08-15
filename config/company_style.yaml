@@ -1,13 +1,16 @@
 colors:
-  canvas: "#F6F3EB"
-  ink: "#291821"
-  muted_plum: "#934761"
-  mint: "#72BAA9"
-  surface: "#D5E7B4"
-  rose: "#AC5C71"
+  canvas: "#F7F8FA"
+  surface: "#FFFFFF"
+  ink: "#16181D"
+  muted: "#667085"
+  border: "#E4E7EC"
+  grid: "#EAECF0"
+  accent: "#315EA8"
+  success: "#28785A"
+  error: "#B42318"
 fonts:
-  sans: "Arial"
-  mono: "Courier New"
+  sans: "Inter, Arial, sans-serif"
+  mono: "SFMono-Regular, Consolas, Liberation Mono, monospace"
 layout:
-  border_radius: 10
+  border_radius: 6
   chart_height: 430

@@ -2,18 +2,23 @@ from pathlib import Path
 
 import pytest
 
-from analytics_command_center.database import SQLiteAdapter
-from analytics_command_center.demo import CANONICAL_ACL, CANONICAL_REGISTRY, DemoStateService
 from analytics_command_center.benchmark import (
     chinook_genre_reference,
     chinook_revenue_reference,
     chinook_temporal_reference,
-    sakila_category_revenue_reference,
-    rows_match,
     is_non_increasing,
+    rows_match,
+    sakila_category_revenue_reference,
 )
+from analytics_command_center.database import SQLiteAdapter
+from analytics_command_center.demo import CANONICAL_ACL, CANONICAL_REGISTRY, DemoStateService
 from analytics_command_center.errors import AccessDenied, UnsafeSQL, safe_live_error
-from analytics_command_center.models import AnalysisRequest, AnalysisResult, ChartSpec, DatabaseRegistration
+from analytics_command_center.models import (
+    AnalysisRequest,
+    AnalysisResult,
+    ChartSpec,
+    DatabaseRegistration,
+)
 from analytics_command_center.onboarding import DatabaseOnboardingService
 from analytics_command_center.rendering import CompanyStyle, render_chart
 from analytics_command_center.service import AnalyticsService
@@ -65,9 +70,11 @@ def test_missing_key_has_clear_error_after_authorization(store, tmp_path):
 def test_renderer_uses_shared_company_tokens():
     root = Path(__file__).parents[1]
     analysis = AnalysisResult(database_id="sample", question="x", summary="x", columns=["country", "total"], rows=[{"country": "NL", "total": 30}])
-    figure = render_chart(analysis, ChartSpec(chart_type="bar", x="country", y="total", title="Revenue"), CompanyStyle(root / "config" / "company_style.yaml"))
-    assert figure.layout.paper_bgcolor == "#F6F3EB"
-    assert figure.layout.font.color == "#291821"
+    style = CompanyStyle(root / "config" / "company_style.yaml")
+    figure = render_chart(analysis, ChartSpec(chart_type="bar", x="country", y="total", title="Revenue"), style)
+    assert figure.layout.paper_bgcolor == style.colors["surface"]
+    assert figure.layout.font.color == style.colors["ink"]
+    assert figure.data[0].marker.color == style.colors["accent"]
 
 
 def test_table_chart_returns_no_plot():
