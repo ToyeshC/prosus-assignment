@@ -334,6 +334,9 @@ def _render_result(database: dict) -> None:
                     figure = render_chart(result.analysis, result.chart_spec, CompanyStyle(ROOT / "config" / "company_style.yaml"))
                     if figure:
                         st.plotly_chart(figure, width="stretch")
+                        display_note = figure.layout.meta.get("display_note") if isinstance(figure.layout.meta, dict) else None
+                        if display_note:
+                            st.caption(display_note)
                     if result.chart_spec.notes:
                         st.caption(result.chart_spec.notes)
                 except Exception:  # noqa: BLE001 - renderer failure must preserve the successful analysis result.
