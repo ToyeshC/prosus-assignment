@@ -14,6 +14,12 @@ from analytics_command_center.presentation import format_result_scope
 from analytics_command_center.rendering import CompanyStyle, render_chart
 from analytics_command_center.runtime import analytics_service, config_store, project_root
 from analytics_command_center.visualization_capabilities import QUICK_CHOICES
+from analytics_command_center.workspace_state import (
+    clear_analytical_state,
+    initialize_question_state,
+    record_submitted_question,
+    select_example_question,
+)
 
 ROOT = project_root()
 STYLE_CONFIG = yaml.safe_load((ROOT / "config" / "company_style.yaml").read_text())
@@ -49,33 +55,12 @@ st.markdown(
 )
 
 LENS_OPTIONS = ("Auto", "Ranking", "Trend", "Compare", "Distribution", "Relationship", "Custom")
-_ANALYTICAL_STATE = (
-    "last_result",
-    "result_context",
-    "visualization_source",
-    "post_run_visualization",
-    "post_run_visualization_guidance",
-)
-_ANALYTICAL_WIDGET_DEFAULTS = {
-    "question_input": "",
-    "initial_visualization": "Auto",
-    "initial_visualization_guidance": "",
-    "analysis_lens": "Auto",
-    "analysis_guidance": "",
-}
-
-
 def _set_example(question: str) -> None:
-    st.session_state["question_input"] = question
-
-
-def _clear_analytical_state() -> None:
-    for key in _ANALYTICAL_STATE:
-        st.session_state.pop(key, None)
-    st.session_state.update(_ANALYTICAL_WIDGET_DEFAULTS)
+    select_example_question(st.session_state, question)
 
 
 def _initialize_session(store) -> None:
+    initialize_question_state(st.session_state)
     if "demo_user_id" not in st.session_state:
         st.session_state["demo_user_id"] = "toyesh"
         st.session_state["selected_database_id"] = "chinook"
@@ -94,7 +79,7 @@ def _reconcile_database_selection(store) -> None:
 def _switch_demo_user(store, user_id: str) -> None:
     if user_id == st.session_state.get("demo_user_id"):
         return
-    _clear_analytical_state()
+    clear_analytical_state(st.session_state)
     st.session_state["demo_user_id"] = user_id
     st.session_state["selected_database_id"] = None
     _reconcile_database_selection(store)
@@ -102,8 +87,7 @@ def _switch_demo_user(store, user_id: str) -> None:
 
 def _select_database(database_id: str) -> None:
     if database_id != st.session_state.get("selected_database_id"):
-        st.session_state.pop("last_result", None)
-        st.session_state.pop("result_context", None)
+        clear_analytical_state(st.session_state)
         st.session_state["selected_database_id"] = database_id
 
 
@@ -189,10 +173,11 @@ def _render_examples(database: dict) -> None:
 
 
 def _submit_request(user_id: str, database_id: str) -> None:
-    question = st.session_state.get("question_input", "")
+    question = st.session_state.get("question_draft", "")
     if not question.strip():
         st.warning("Enter a question before running analysis.")
         return
+    question = record_submitted_question(st.session_state)
     visualization_hint = _request_visualization_hint()
     try:
         with st.spinner("Running analysis..."):
@@ -224,7 +209,7 @@ def _render_query(user_id: str, database: dict) -> None:
         with question_column:
             st.text_input(
                 "Ask your data",
-                key="question_input",
+                key="question_draft",
                 placeholder=f"Ask a question about {database['display_name']}…",
                 label_visibility="collapsed",
             )
@@ -286,6 +271,7 @@ def _render_result(database: dict) -> None:
         st.json(
             {
                 "authorization": "allowed" if telemetry.acl_decision and telemetry.acl_decision.allowed else "denied",
+                "submitted_question": result.analysis.question,
                 "analysis_run_id": telemetry.run_id,
                 "outcome": telemetry.outcome,
                 "policy": telemetry.governance_policy,
