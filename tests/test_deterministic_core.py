@@ -76,6 +76,8 @@ def test_renderer_uses_shared_company_tokens():
     assert figure.layout.plot_bgcolor == style.colors["transparent"]
     assert figure.layout.font.color == style.colors["ink"]
     assert figure.data[0].marker.color == style.colors["accent"]
+    assert style.colors["faint"] == "#98A2B3"
+    assert style.colors["accent_soft"] == "#EDF2FC"
 
 
 def test_table_chart_returns_no_plot():

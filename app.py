@@ -29,8 +29,13 @@ COLORS = STYLE_CONFIG["colors"]
 st.set_page_config(page_title="Analytics Command Center", page_icon="◌", layout="wide")
 st.markdown(
     f"""<style>
-    .stApp {{ background: {COLORS['canvas']}; color: {COLORS['ink']}; }}
-    .block-container {{ max-width: 1180px; padding-top: 2rem; padding-bottom: 3rem; }}
+    .stApp {{
+      background-color: {COLORS['canvas']};
+      background-image: radial-gradient(circle at 1px 1px, rgba(22, 24, 29, .055) 1px, transparent 1.1px);
+      background-size: 18px 18px;
+      color: {COLORS['ink']};
+    }}
+    .block-container {{ max-width: 1320px; padding-top: 2rem; padding-bottom: 3rem; }}
     h1, h2, h3, p, label {{ color: {COLORS['ink']}; font-family: {STYLE_CONFIG['fonts']['sans']}; }}
     [data-testid='stSidebar'] {{ display: none; }}
     [data-testid='stHeader'] {{ background: transparent; }}
@@ -59,6 +64,13 @@ st.markdown(
     [data-testid='stPlotlyChart'], [data-testid='stPlotlyChart'] > div {{ background: transparent; border: 0; box-shadow: none; }}
     .st-key-example-row [data-testid='stButton'] button {{ border: 0; padding: 0; color: {COLORS['muted']}; background: transparent; font-size: .88rem; }}
     .st-key-example-row [data-testid='stButton'] button:hover {{ color: {COLORS['accent']}; background: transparent; }}
+    @media (prefers-reduced-motion: reduce) {{
+      *, *::before, *::after {{
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+      }}
+    }}
     </style>""",
     unsafe_allow_html=True,
 )
