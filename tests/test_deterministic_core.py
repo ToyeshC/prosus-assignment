@@ -175,3 +175,12 @@ def test_supplied_sakila_category_revenue_reference_is_real():
     rows = sakila_category_revenue_reference(SQLiteAdapter(database))
     assert len(rows) == 16
     assert rows[0]["revenue"] >= rows[-1]["revenue"]
+
+
+def test_supplied_northwind_catalog_has_no_declared_foreign_keys():
+    database = Path(__file__).parents[1] / "datasets" / "northwind_small.sqlite"
+    if not database.is_file():
+        pytest.skip("Supplied Northwind database is not present")
+    catalog = SQLiteAdapter(database).schema_catalog("northwind")
+    assert len(catalog.foreign_keys) == 0
+    assert {"Category", "Product", "OrderDetail"}.issubset({table.name for table in catalog.tables})

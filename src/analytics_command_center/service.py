@@ -109,7 +109,7 @@ class AnalyticsService:
         raw_catalog = adapter.schema_catalog(request.database_id)
         catalog = self.schema_policy.governed_catalog(raw_catalog)
         restricted_fields = self.schema_policy.restricted_fields(raw_catalog)
-        executor = SafeQueryExecutor(adapter, self.settings.max_result_rows, self.settings.query_timeout_seconds, self.schema_policy.restricted_column_names(raw_catalog))
+        executor = SafeQueryExecutor(adapter, self.settings.max_result_rows, self.settings.query_timeout_seconds, self.schema_policy.restricted_fields_by_table(raw_catalog))
         telemetry.schema_provenance = [
             f"Governed catalog supplied: {len(catalog.tables)} tables",
             f"Declared relationships supplied: {len(catalog.foreign_keys)}",
@@ -214,7 +214,10 @@ class AnalyticsService:
         telemetry.analysis_agent_status = "completed"
         telemetry.visualization_agent_status = "not_needed"
         telemetry.governance_policy = "restricted_column" if restricted else "sql_safety"
-        telemetry.restricted_reference = next((field for field in restricted_fields if field.split(".", 1)[1].lower() in request.question.lower()), None)
+        telemetry.restricted_reference = self._restricted_reference_from_error(error) or next(
+            (field for field in restricted_fields if field.split(".", 1)[1].lower() in request.question.lower()),
+            None,
+        )
         analysis = AnalysisResult(
             database_id=request.database_id, question=request.question, analysis_lens=request.analysis_lens, outcome="blocked",
             summary="This request references a governed field that is unavailable for analysis." if restricted else "This SQL request is outside the read-only analytics policy.",
@@ -222,6 +225,11 @@ class AnalyticsService:
         )
         self._finish(telemetry, analysis)
         return analysis
+
+    @staticmethod
+    def _restricted_reference_from_error(error: str) -> str | None:
+        match = re.search(r"restricted (?:field|table): ([a-z0-9_]+\.(?:[a-z0-9_]+|\*))", error, re.I)
+        return match.group(1).lower() if match else None
 
     def choose_visualization(self, analysis: AnalysisResult, visualization_hint: str | None) -> tuple[ChartSpec | None, str | None]:
         """Revisualize a completed result without database or analysis-agent work."""

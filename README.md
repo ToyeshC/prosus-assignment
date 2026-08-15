@@ -42,6 +42,26 @@ PYTHONPATH=src python3 -m pytest -m agent_eval
 
 The default suite never invokes OpenAI. Live agent evaluations require both `OPENAI_API_KEY` and downloaded assignment datasets.
 
+## Evaluation report
+
+Generate the human-readable deterministic evidence report without API usage:
+
+```bash
+.venv/bin/analytics eval local
+```
+
+To intentionally run the billable GPT-5 benchmark cases and update the same report:
+
+```bash
+.venv/bin/analytics eval live
+```
+
+Both commands write `reports/evaluation.json` and `reports/evaluation.md`. The live command temporarily onboards Sakila only for its evaluation and restores the canonical Donné pre-demo state afterwards.
+
+## Current limitation
+
+Complex multi-objective questions may require decomposition into multiple analytical runs. Predictive concepts such as churn also require an explicit target/definition before analysis.
+
 ## One verified live Chinook run
 
 This command intentionally invokes the configured OpenAI model and can use API credits. It asks a fixed,

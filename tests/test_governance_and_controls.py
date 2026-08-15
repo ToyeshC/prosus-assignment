@@ -82,12 +82,51 @@ def test_schema_policy_hides_obvious_credentials_and_allows_ordinary_columns(tmp
     governed = policy.governed_catalog(raw)
     assert policy.restricted_fields(raw) == ["staff.password"]
     assert [column.name for column in governed.tables[0].columns] == ["id", "email"]
-    executor = SafeQueryExecutor(SQLiteAdapter(db), 10, 1, policy.restricted_column_names(raw))
-    with pytest.raises(UnsafeSQL, match="restricted"):
+    executor = SafeQueryExecutor(SQLiteAdapter(db), 10, 1, policy.restricted_fields_by_table(raw))
+    with pytest.raises(UnsafeSQL, match="staff.password"):
         executor.execute("SELECT password FROM staff")
-    with pytest.raises(UnsafeSQL, match="Wildcard"):
+    with pytest.raises(UnsafeSQL, match="staff.\\*"):
         executor.execute("SELECT * FROM staff")
     assert executor.execute("SELECT email FROM staff").columns == ["email"]
+
+
+@pytest.mark.parametrize(("sql", "reference"), [("SELECT password FROM staff", "staff.password"), ("SELECT * FROM staff", "staff.*")])
+def test_restricted_sql_policy_records_a_safe_known_reference(store, tmp_path, sql, reference):
+    import sqlite3
+
+    staff_db = tmp_path / "staff.db"
+    with sqlite3.connect(staff_db) as connection:
+        connection.execute("CREATE TABLE staff (staff_id INTEGER, password TEXT)")
+    store.register_database("staff", str(staff_db))
+    store.grant("toyesh", "staff")
+    run = service(store, tmp_path, FakeAnalysisAgent([SQLProposal(sql=sql)])).run(
+        AnalysisRequest(user_id="toyesh", database_id="staff", question="Show staff data")
+    )
+
+    assert run.analysis.outcome == "blocked"
+    assert run.telemetry.governance_policy == "restricted_column"
+    assert run.telemetry.restricted_reference == reference
+    assert run.telemetry.sql_executed is False
+
+
+def test_wildcard_policy_is_scoped_to_the_referenced_table(tmp_path):
+    import sqlite3
+
+    db = tmp_path / "governed.db"
+    with sqlite3.connect(db) as connection:
+        connection.executescript(
+            "CREATE TABLE staff (id INTEGER, password TEXT); "
+            "CREATE TABLE category (category_id INTEGER, name TEXT); "
+            "INSERT INTO category VALUES (1, 'Action');"
+        )
+    adapter = SQLiteAdapter(db)
+    policy = SchemaGovernancePolicy()
+    executor = SafeQueryExecutor(adapter, 10, 1, policy.restricted_fields_by_table(adapter.schema_catalog("governed")))
+
+    assert executor.execute("SELECT * FROM category").rows == [{"category_id": 1, "name": "Action"}]
+    assert executor.execute("SELECT COUNT(*) AS category_count FROM category").rows == [{"category_count": 1}]
+    with pytest.raises(UnsafeSQL, match=r"staff\.\*"):
+        executor.execute("SELECT * FROM staff")
 
 
 def test_denied_user_has_zero_schema_agent_and_query_exposure(store, tmp_path, monkeypatch):

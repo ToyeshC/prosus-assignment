@@ -39,3 +39,11 @@ class SchemaGovernancePolicy:
 
     def restricted_column_names(self, catalog: SchemaCatalog) -> set[str]:
         return {column.name.lower() for table in catalog.tables for column in table.columns if self.is_restricted(column.name)}
+
+    def restricted_fields_by_table(self, catalog: SchemaCatalog) -> dict[str, set[str]]:
+        """Return table-qualified policy data for deterministic SQL validation."""
+        return {
+            table.name.lower(): {column.name.lower() for column in table.columns if self.is_restricted(column.name)}
+            for table in catalog.tables
+            if any(self.is_restricted(column.name) for column in table.columns)
+        }

@@ -70,6 +70,21 @@ GROUP BY c.category_id, c.name
 ORDER BY revenue DESC, category ASC
 """
 
+NORTHWIND_CATEGORY_REVENUE_QUESTION = (
+    "Which product categories generated the most revenue? Return exactly the columns category and revenue, "
+    "ranked from highest to lowest revenue."
+)
+NORTHWIND_CATEGORY_REVENUE_REFERENCE_SQL = """
+SELECT
+  c.CategoryName AS category,
+  ROUND(SUM(od.UnitPrice * od.Quantity * (1 - od.Discount)), 2) AS revenue
+FROM "OrderDetail" AS od
+JOIN "Product" AS p ON p.Id = od.ProductId
+JOIN "Category" AS c ON c.Id = p.CategoryId
+GROUP BY c.Id, c.CategoryName
+ORDER BY revenue DESC, category ASC
+"""
+
 
 @dataclass(frozen=True)
 class VerificationResult:
@@ -140,6 +155,10 @@ def chinook_genre_reference(adapter: SQLiteAdapter) -> list[dict]:
 
 def sakila_category_revenue_reference(adapter: SQLiteAdapter) -> list[dict]:
     return chinook_reference(adapter, SAKILA_CATEGORY_REVENUE_REFERENCE_SQL)
+
+
+def northwind_category_revenue_reference(adapter: SQLiteAdapter) -> list[dict]:
+    return chinook_reference(adapter, NORTHWIND_CATEGORY_REVENUE_REFERENCE_SQL)
 
 
 def verify_chinook_run(
@@ -216,5 +235,18 @@ def verify_sakila_category_revenue_run(run: AnalyticsRunResult, adapter: SQLiteA
         "category",
         "revenue",
         "Sakila category revenue",
+        ranking_column="revenue",
+    )
+
+
+def verify_northwind_category_revenue_run(run: AnalyticsRunResult, adapter: SQLiteAdapter) -> VerificationResult:
+    return verify_chinook_run(
+        run,
+        northwind_category_revenue_reference(adapter),
+        ["category", "revenue"],
+        "bar",
+        "category",
+        "revenue",
+        "Northwind category revenue",
         ranking_column="revenue",
     )

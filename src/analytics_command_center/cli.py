@@ -18,17 +18,21 @@ from .benchmark import (
     verify_sakila_category_revenue_run,
 )
 from .database import SQLiteAdapter
+from .evaluation_report import build_evaluation_payload, run_live_evaluations, run_local_evaluations, write_evaluation_report
 from .errors import safe_live_error
 from .models import AnalysisRequest
-from .runtime import analytics_service, config_store, demo_state_service, onboarding_service
+from .runtime import analytics_service, config_store, demo_state_service, onboarding_service, project_root
+from .settings import get_settings
 
 app = typer.Typer(help="Governed Analytics Command Center CLI")
 database_app = typer.Typer(help="Database onboarding commands")
 demo_app = typer.Typer(help="Reproducible state for the Donné → Sakila demo")
 verify_app = typer.Typer(help="Explicit paid, real-model verification runs")
+evaluation_app = typer.Typer(help="Reproducible deterministic and live evaluation reports")
 app.add_typer(database_app, name="db")
 app.add_typer(demo_app, name="demo")
 app.add_typer(verify_app, name="verify")
+app.add_typer(evaluation_app, name="eval")
 
 
 @database_app.command("add")
@@ -144,6 +148,36 @@ def verify_sakila_category_revenue() -> None:
     typer.echo(f"Verification: {'PASS' if verification.passed else 'FAIL'} — {verification.message}")
     if not verification.passed:
         raise typer.Exit(code=1)
+
+
+def _write_report(*, live: bool) -> None:
+    root = project_root()
+    deterministic_cases = run_local_evaluations(root)
+    try:
+        live_cases = run_live_evaluations(root, get_settings()) if live else []
+    except Exception as error:
+        typer.echo(safe_live_error(error), err=True)
+        raise typer.Exit(code=1) from None
+    payload = build_evaluation_payload(get_settings().openai_default_model, deterministic_cases, live_cases)
+    json_path, markdown_path = write_evaluation_report(root, payload)
+    typer.echo(f"✓ Wrote {json_path.relative_to(root)}")
+    typer.echo(f"✓ Wrote {markdown_path.relative_to(root)}")
+    typer.echo(
+        f"Deterministic/local: {payload['deterministic_checks']['passed']} / {payload['deterministic_checks']['total']} | "
+        f"Live GPT-5: {payload['live_gpt5_evaluations']['passed']} / {payload['live_gpt5_evaluations']['total']}"
+    )
+
+
+@evaluation_app.command("local")
+def evaluate_local() -> None:
+    """Run selected deterministic evidence cases and write the report without API calls."""
+    _write_report(live=False)
+
+
+@evaluation_app.command("live")
+def evaluate_live() -> None:
+    """Intentionally run billable GPT-5 cases, then restore canonical demo state."""
+    _write_report(live=True)
 
 
 if __name__ == "__main__":
