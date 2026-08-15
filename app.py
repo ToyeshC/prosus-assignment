@@ -41,6 +41,7 @@ st.markdown(
     [data-testid='stButton'] button {{ border-radius: 6px; box-shadow: none; }}
     [data-testid='stTabs'] [data-baseweb='tab-list'] {{ gap: 1.25rem; border-bottom: 1px solid {COLORS['border']}; }}
     [data-testid='stTabs'] [data-baseweb='tab'] {{ padding-left: 0; padding-right: 0; }}
+    [data-testid='stPlotlyChart'], [data-testid='stPlotlyChart'] > div {{ background: transparent; border: 0; box-shadow: none; }}
     .st-key-example-row [data-testid='stButton'] button {{ border: 0; padding: 0; color: {COLORS['muted']}; background: transparent; font-size: .88rem; }}
     .st-key-example-row [data-testid='stButton'] button:hover {{ color: {COLORS['accent']}; background: transparent; }}
     </style>""",

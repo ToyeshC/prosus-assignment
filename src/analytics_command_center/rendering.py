@@ -65,13 +65,21 @@ def render_chart(analysis: AnalysisResult, spec: ChartSpec, style: CompanyStyle)
     figure.update_layout(
         title=spec.title,
         height=style.layout["chart_height"],
-        paper_bgcolor=style.colors["surface"],
-        plot_bgcolor=style.colors["surface"],
+        paper_bgcolor=style.colors["transparent"],
+        plot_bgcolor=style.colors["transparent"],
         font={"family": style.fonts["sans"], "color": style.colors["ink"]},
         margin={"l": 24, "r": 24, "t": 60, "b": 30},
     )
-    figure.update_xaxes(title=x_axis_title, gridcolor=style.colors["grid"], zerolinecolor=style.colors["grid"])
-    figure.update_yaxes(title=spec.y_label or spec.y, gridcolor=style.colors["grid"], zerolinecolor=style.colors["grid"])
+    axis_style = {
+        "gridcolor": style.colors["grid"],
+        "zerolinecolor": style.colors["grid"],
+        "linecolor": style.colors["border"],
+        "tickcolor": style.colors["border"],
+        "showline": True,
+        "ticks": "outside",
+    }
+    figure.update_xaxes(title=x_axis_title, **axis_style)
+    figure.update_yaxes(title=spec.y_label or spec.y, **axis_style)
     return figure
 
 

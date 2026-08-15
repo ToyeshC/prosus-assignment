@@ -72,7 +72,8 @@ def test_renderer_uses_shared_company_tokens():
     analysis = AnalysisResult(database_id="sample", question="x", summary="x", columns=["country", "total"], rows=[{"country": "NL", "total": 30}])
     style = CompanyStyle(root / "config" / "company_style.yaml")
     figure = render_chart(analysis, ChartSpec(chart_type="bar", x="country", y="total", title="Revenue"), style)
-    assert figure.layout.paper_bgcolor == style.colors["surface"]
+    assert figure.layout.paper_bgcolor == style.colors["transparent"]
+    assert figure.layout.plot_bgcolor == style.colors["transparent"]
     assert figure.layout.font.color == style.colors["ink"]
     assert figure.data[0].marker.color == style.colors["accent"]
 

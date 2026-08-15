@@ -1,6 +1,7 @@
 colors:
   canvas: "#F7F8FA"
   surface: "#FFFFFF"
+  transparent: "rgba(0,0,0,0)"
   ink: "#16181D"
   muted: "#667085"
   border: "#E4E7EC"

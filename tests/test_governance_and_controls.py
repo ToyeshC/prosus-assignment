@@ -187,6 +187,8 @@ def test_registered_chart_types_have_a_deterministic_renderer(chart_type):
         spec = ChartSpec(chart_type=chart_type, x="category", y="first_value", title="x")
     figure = render_chart(analysis, spec, CompanyStyle(Path(__file__).parents[1] / "config" / "company_style.yaml"))
     assert figure is not None
+    assert figure.layout.paper_bgcolor == "rgba(0,0,0,0)"
+    assert figure.layout.plot_bgcolor == "rgba(0,0,0,0)"
 
 
 def test_destructive_and_ml_requests_are_typed_outcomes_without_agent_work(store, tmp_path):
