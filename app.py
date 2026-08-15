@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from contextlib import nullcontext
 
 import pandas as pd
 import streamlit as st
@@ -36,11 +37,19 @@ st.markdown(
     .workspace-brand {{ font-size: 1rem; font-weight: 700; letter-spacing: -.02em; margin: 0; }}
     .workspace-subtitle {{ color: {COLORS['muted']}; font-size: .9rem; margin: .15rem 0 0; }}
     .scope-context {{ color: {COLORS['muted']}; font-size: .88rem; margin: .2rem 0 1.15rem; }}
-    .empty-workspace {{ max-width: 34rem; margin: 7rem auto; text-align: center; }}
+    .st-key-starting-surface {{ max-width: 54rem; margin: 3.25rem auto 0; padding-top: 1.5rem; border-top: 1px solid {COLORS['border']}; }}
+    .st-key-starting-surface p {{ margin: 0 0 1rem; }}
+    .st-key-starting-surface .starting-title {{ font-size: 1rem; font-weight: 600; }}
+    .st-key-starting-surface .starting-copy, .example-intro {{ color: {COLORS['muted']}; font-size: .9rem; }}
+    .empty-workspace {{ max-width: 34rem; margin: 6rem auto; text-align: center; }}
     .empty-workspace h2 {{ font-size: 1.4rem; font-weight: 600; margin-bottom: .35rem; }}
     .empty-workspace p {{ color: {COLORS['muted']}; line-height: 1.55; }}
-    .database-prompt {{ margin: 5rem auto; max-width: 34rem; color: {COLORS['muted']}; text-align: center; }}
+    .empty-workspace .empty-support {{ margin-top: .65rem; font-size: .9rem; }}
+    .database-prompt {{ margin: 5rem auto; max-width: 28rem; color: {COLORS['muted']}; }}
     .database-prompt strong {{ color: {COLORS['ink']}; font-weight: 600; }}
+    .st-key-source-selection {{ max-width: 28rem; margin: 1.25rem auto 0; }}
+    .st-key-source-selection [data-testid='stButton'] button {{ border: 0; border-bottom: 1px solid {COLORS['border']}; border-radius: 0; background: transparent; color: {COLORS['ink']}; justify-content: flex-start; padding: .7rem 0; }}
+    .st-key-source-selection [data-testid='stButton'] button:hover {{ background: transparent; color: {COLORS['accent']}; border-bottom-color: {COLORS['accent']}; }}
     [data-testid='stForm'] {{ border: 0; padding: 0; }}
     [data-testid='stTextInput'] input {{ border-color: {COLORS['border']}; border-radius: 6px; background: {COLORS['surface']}; }}
     [data-testid='stTextInput'] input:focus {{ border-color: {COLORS['accent']}; box-shadow: 0 0 0 1px {COLORS['accent']}; }}
@@ -162,6 +171,7 @@ def _render_examples(database: dict) -> None:
     if not examples:
         return
     with st.container(key="example-row"):
+        st.markdown("<p class='example-intro'>Or choose an example</p>", unsafe_allow_html=True)
         columns = st.columns(len(examples))
         for column, example in zip(columns, examples):
             column.button(
@@ -201,23 +211,41 @@ def _submit_request(user_id: str, database_id: str) -> None:
 
 
 def _render_query(user_id: str, database: dict) -> None:
-    query_column, options_column = st.columns([8, 1])
-    with options_column:
-        _render_options()
-    with query_column, st.form("analysis_request", clear_on_submit=False):
-        question_column, run_column = st.columns([8, 1])
-        with question_column:
-            st.text_input(
-                "Ask your data",
-                key="question_draft",
-                placeholder=f"Ask a question about {database['display_name']}…",
-                label_visibility="collapsed",
+    no_result_yet = not st.session_state.get("last_result")
+    surface = st.container(key="starting-surface") if no_result_yet else nullcontext()
+    with surface:
+        if no_result_yet:
+            st.markdown(
+                "<p class='starting-title'>Start with a question</p><p class='starting-copy'>Ask for a comparison, trend, or ranking from the selected source.</p>",
+                unsafe_allow_html=True,
             )
-        with run_column:
-            submitted = st.form_submit_button("Run", type="primary", width="stretch")
-    _render_examples(database)
+        query_column, options_column = st.columns([8, 1])
+        with options_column:
+            _render_options()
+        with query_column, st.form("analysis_request", clear_on_submit=False):
+            question_column, run_column = st.columns([8, 1])
+            with question_column:
+                st.text_input(
+                    "Ask your data",
+                    key="question_draft",
+                    placeholder=f"Ask a question about {database['display_name']}…",
+                    label_visibility="collapsed",
+                )
+            with run_column:
+                submitted = st.form_submit_button("Run", type="primary", width="stretch")
+        _render_examples(database)
     if submitted:
         _submit_request(user_id, database["id"])
+
+
+def _render_source_selection(store, grants: list[str]) -> None:
+    st.markdown("<p class='database-prompt'><strong>Choose a data source</strong><br>Select a source to begin an analysis.</p>", unsafe_allow_html=True)
+    with st.container(key="source-selection"):
+        for database_id in grants:
+            database = store.database(database_id)
+            if st.button(database["display_name"], key=f"source_{database_id}", width="stretch"):
+                _select_database(database_id)
+                st.rerun()
 
 
 def _revisualize_if_requested() -> None:
@@ -307,17 +335,14 @@ def main() -> None:
     if not grants:
         user = store.user(user_id)
         st.markdown(
-            f"<section class='empty-workspace'><h2>{user['display_name']}</h2><p>No data sources assigned.</p></section>",
+            f"<section class='empty-workspace'><h2>{user['display_name']}</h2><p>No data sources assigned.</p><p class='empty-support'>Sources appear here when access is granted.</p></section>",
             unsafe_allow_html=True,
         )
         return
 
     database_id = st.session_state.get("selected_database_id")
     if not database_id:
-        st.markdown(
-            "<p class='database-prompt'><strong>Choose a data source</strong><br>Use the database control in the header to begin an analysis.</p>",
-            unsafe_allow_html=True,
-        )
+        _render_source_selection(store, grants)
         return
 
     database = {**store.database(database_id), "id": database_id}
