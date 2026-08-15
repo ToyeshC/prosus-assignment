@@ -39,10 +39,25 @@ st.markdown(
     h1, h2, h3, p, label {{ color: {COLORS['ink']}; font-family: {STYLE_CONFIG['fonts']['sans']}; }}
     [data-testid='stSidebar'] {{ display: none; }}
     [data-testid='stHeader'] {{ background: transparent; }}
-    .workspace-brand {{ font-size: 1rem; font-weight: 700; letter-spacing: -.02em; margin: 0; }}
-    .workspace-subtitle {{ color: {COLORS['muted']}; font-size: .9rem; margin: .15rem 0 0; }}
+    .workspace-brand {{ font-size: .95rem; font-weight: 700; letter-spacing: -.02em; margin: 0; }}
+    .workspace-subtitle {{ display: none; }}
+    [data-testid='stPopoverButton'] > button {{
+      min-height: 32px;
+      border: 1px solid {COLORS['border']};
+      border-radius: {STYLE_CONFIG['layout']['border_radius']}px;
+      background: rgba(255, 255, 255, .76);
+      color: #344054;
+      font-size: .8rem;
+      font-weight: 500;
+      transition: transform 180ms cubic-bezier(.16, 1, .3, 1), border-color 180ms cubic-bezier(.16, 1, .3, 1), background 180ms cubic-bezier(.16, 1, .3, 1);
+    }}
+    [data-testid='stPopoverButton'] > button:hover, [data-testid='stPopoverButton'] > button:focus-visible {{
+      transform: translateY(-1px);
+      border-color: #B6C8E9;
+      background: {COLORS['surface']};
+    }}
     .scope-context {{ color: {COLORS['muted']}; font-size: .88rem; margin: .2rem 0 1.15rem; }}
-    .st-key-starting-surface {{ max-width: 54rem; margin: 3.25rem auto 0; padding-top: 1.5rem; border-top: 1px solid {COLORS['border']}; }}
+    .st-key-starting-surface {{ max-width: 760px; margin: 4.5rem auto 0; padding-top: 1.5rem; border-top: 1px solid {COLORS['border']}; }}
     .st-key-starting-surface p {{ margin: 0 0 1rem; }}
     .st-key-starting-surface .starting-title {{ font-size: 1rem; font-weight: 600; }}
     .st-key-starting-surface .starting-copy, .example-intro {{ color: {COLORS['muted']}; font-size: .9rem; }}
@@ -50,19 +65,21 @@ st.markdown(
     .empty-workspace h2 {{ font-size: 1.4rem; font-weight: 600; margin-bottom: .35rem; }}
     .empty-workspace p {{ color: {COLORS['muted']}; line-height: 1.55; }}
     .empty-workspace .empty-support {{ margin-top: .65rem; font-size: .9rem; }}
-    .database-prompt {{ margin: 5rem auto; max-width: 28rem; color: {COLORS['muted']}; }}
+    .database-prompt {{ margin: 5.25rem auto 0; max-width: 620px; color: {COLORS['muted']}; }}
     .database-prompt strong {{ color: {COLORS['ink']}; font-weight: 600; }}
-    .st-key-source-selection {{ max-width: 28rem; margin: 1.25rem auto 0; }}
-    .st-key-source-selection [data-testid='stButton'] button {{ border: 0; border-bottom: 1px solid {COLORS['border']}; border-radius: 0; background: transparent; color: {COLORS['ink']}; justify-content: flex-start; padding: .7rem 0; }}
-    .st-key-source-selection [data-testid='stButton'] button:hover {{ background: transparent; color: {COLORS['accent']}; border-bottom-color: {COLORS['accent']}; }}
+    .st-key-source-selection {{ max-width: 620px; margin: 1.25rem auto 0; border-top: 1px solid {COLORS['border']}; }}
+    .st-key-source-selection [data-testid='stButton'] button {{ border: 0; border-bottom: 1px solid {COLORS['border']}; border-radius: 0; background: transparent; color: {COLORS['ink']}; justify-content: flex-start; padding: .9rem 0; transition: transform 180ms cubic-bezier(.16, 1, .3, 1), color 180ms cubic-bezier(.16, 1, .3, 1), border-color 180ms cubic-bezier(.16, 1, .3, 1); }}
+    .st-key-source-selection [data-testid='stButton'] button:hover, .st-key-source-selection [data-testid='stButton'] button:focus-visible {{ background: transparent; color: {COLORS['accent']}; border-bottom-color: #A9BEE6; transform: translateX(4px); }}
     [data-testid='stForm'] {{ border: 0; padding: 0; }}
-    [data-testid='stTextInput'] input {{ border-color: {COLORS['border']}; border-radius: 6px; background: {COLORS['surface']}; }}
+    [data-testid='stTextInput'] input {{ height: 42px; border-color: #D5DAE2; border-radius: {STYLE_CONFIG['layout']['border_radius']}px; background: rgba(255, 255, 255, .84); }}
     [data-testid='stTextInput'] input:focus {{ border-color: {COLORS['accent']}; box-shadow: 0 0 0 1px {COLORS['accent']}; }}
-    [data-testid='stButton'] button {{ border-radius: 6px; box-shadow: none; }}
+    [data-testid='stFormSubmitButton'] button, [data-testid='stButton'] button {{ min-height: 42px; border-radius: {STYLE_CONFIG['layout']['border_radius']}px; box-shadow: none; transition: transform 150ms cubic-bezier(.16, 1, .3, 1), border-color 150ms cubic-bezier(.16, 1, .3, 1), background 150ms cubic-bezier(.16, 1, .3, 1); }}
+    [data-testid='stFormSubmitButton'] button:active {{ transform: translateY(1px) scale(.985); }}
     [data-testid='stTabs'] [data-baseweb='tab-list'] {{ gap: 1.25rem; border-bottom: 1px solid {COLORS['border']}; }}
     [data-testid='stTabs'] [data-baseweb='tab'] {{ padding-left: 0; padding-right: 0; }}
     [data-testid='stPlotlyChart'], [data-testid='stPlotlyChart'] > div {{ background: transparent; border: 0; box-shadow: none; }}
-    .st-key-example-row [data-testid='stButton'] button {{ border: 0; padding: 0; color: {COLORS['muted']}; background: transparent; font-size: .88rem; }}
+    .st-key-example-row {{ margin-top: .9rem; }}
+    .st-key-example-row [data-testid='stButton'] button {{ min-height: 0; border: 0; padding: 0; color: {COLORS['muted']}; background: transparent; font-size: .82rem; }}
     .st-key-example-row [data-testid='stButton'] button:hover {{ color: {COLORS['accent']}; background: transparent; }}
     @media (prefers-reduced-motion: reduce) {{
       *, *::before, *::after {{
@@ -122,11 +139,10 @@ def _example_label(label: str) -> str:
 
 def _render_header(store, user_id: str, grants: list[str]) -> None:
     user = store.user(user_id)
-    brand, _, user_slot, database_slot = st.columns([5, 2, 2, 2])
+    brand, _, user_slot, database_slot = st.columns([7, 1, 2, 2])
     with brand:
         st.markdown("<p class='workspace-brand'>Analytics Command Center</p>", unsafe_allow_html=True)
-        st.markdown("<p class='workspace-subtitle'>Explore your data</p>", unsafe_allow_html=True)
-    with user_slot, st.popover(f"{_initials(user['display_name'])}  {user['display_name']}", width="stretch"):
+    with user_slot, st.popover(f"●  {_initials(user['display_name'])}  {user['display_name']}  ▾", width="stretch"):
         st.caption("Switch demo user")
         for candidate_id, candidate in store.acl()["users"].items():
             active = candidate_id == user_id
@@ -136,7 +152,7 @@ def _render_header(store, user_id: str, grants: list[str]) -> None:
                 st.rerun()
     selected = st.session_state.get("selected_database_id")
     database_label = store.database(selected)["display_name"] if selected else "Select database"
-    with database_slot, st.popover(database_label, width="stretch"):
+    with database_slot, st.popover(f"{database_label}  ▾", width="stretch"):
         if not grants:
             st.caption("No data sources assigned")
         else:
@@ -255,7 +271,7 @@ def _render_source_selection(store, grants: list[str]) -> None:
     with st.container(key="source-selection"):
         for database_id in grants:
             database = store.database(database_id)
-            if st.button(database["display_name"], key=f"source_{database_id}", width="stretch"):
+            if st.button(f"{database['display_name']}  →", key=f"source_{database_id}", width="stretch"):
                 _select_database(database_id)
                 st.rerun()
 
