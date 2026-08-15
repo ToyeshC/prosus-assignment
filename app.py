@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 from contextlib import nullcontext
+from html import escape
 
 import pandas as pd
 import streamlit as st
@@ -81,6 +82,19 @@ st.markdown(
     .st-key-example-row {{ margin-top: .9rem; }}
     .st-key-example-row [data-testid='stButton'] button {{ min-height: 0; border: 0; padding: 0; color: {COLORS['muted']}; background: transparent; font-size: .82rem; }}
     .st-key-example-row [data-testid='stButton'] button:hover {{ color: {COLORS['accent']}; background: transparent; }}
+    .analysis-loading {{ min-height: 28rem; display: grid; place-items: center; text-align: center; }}
+    .analysis-loading-mark {{ position: relative; display: block; width: 38px; height: 38px; margin: 0 auto 1.15rem; }}
+    .analysis-loading-mark::before, .analysis-loading-mark::after {{ content: ''; position: absolute; border: 1.5px solid #9EB7E5; border-radius: 50%; }}
+    .analysis-loading-mark::before {{ inset: 2px; }}
+    .analysis-loading-mark::after {{ inset: 9px; border-color: {COLORS['accent']}; border-top-color: transparent; animation: analysis-orbit 1.5s linear infinite; }}
+    .analysis-loading-mark {{ background: radial-gradient(circle at center, {COLORS['accent']} 0 5px, transparent 5.5px); animation: analysis-breathe 1.5s cubic-bezier(.16, 1, .3, 1) infinite alternate; }}
+    .analysis-loading h2 {{ margin: 0; font-size: 1.2rem; letter-spacing: -.025em; font-weight: 650; }}
+    .analysis-loading p {{ margin: .3rem 0 0; color: {COLORS['muted']}; font-size: .84rem; }}
+    .st-key-result-workspace {{ max-width: 960px; margin: 2.75rem auto 0; }}
+    .st-key-result-workspace [data-testid='stMarkdown'] p:first-child {{ max-width: 760px; margin: 0; font-size: 1.55rem; line-height: 1.32; letter-spacing: -.028em; font-weight: 650; }}
+    .st-key-result-workspace .scope-context {{ margin-top: .6rem; margin-bottom: 1.7rem; font-size: .82rem; }}
+    @keyframes analysis-orbit {{ to {{ transform: rotate(360deg); }} }}
+    @keyframes analysis-breathe {{ to {{ transform: scale(.76); opacity: .7; }} }}
     @media (prefers-reduced-motion: reduce) {{
       *, *::before, *::after {{
         animation-duration: .01ms !important;
@@ -210,32 +224,44 @@ def _render_examples(database: dict) -> None:
             )
 
 
-def _submit_request(user_id: str, database_id: str) -> None:
+def _render_analysis_loading(database_name: str) -> None:
+    st.markdown(
+        f"<section class='analysis-loading'><div><span class='analysis-loading-mark'></span>"
+        f"<h2>Analysing {escape(database_name)}</h2><p>Preparing your result…</p></div></section>",
+        unsafe_allow_html=True,
+    )
+
+
+def _submit_request(user_id: str, database_id: str, database_name: str) -> None:
     question = st.session_state.get("question_draft", "")
     if not question.strip():
         st.warning("Enter a question before running analysis.")
         return
     question = record_submitted_question(st.session_state)
     visualization_hint = _request_visualization_hint()
+    loading_placeholder = st.empty()
     try:
-        with st.spinner("Running analysis..."):
-            st.session_state["last_result"] = analytics_service().run(
-                AnalysisRequest(
-                    user_id=user_id,
-                    database_id=database_id,
-                    question=question,
-                    analysis_lens=st.session_state.get("analysis_lens", "Auto").lower(),
-                    analysis_hint=st.session_state.get("analysis_guidance") or None,
-                    visualization_hint=visualization_hint,
-                )
+        with loading_placeholder.container():
+            _render_analysis_loading(database_name)
+        st.session_state["last_result"] = analytics_service().run(
+            AnalysisRequest(
+                user_id=user_id,
+                database_id=database_id,
+                question=question,
+                analysis_lens=st.session_state.get("analysis_lens", "Auto").lower(),
+                analysis_hint=st.session_state.get("analysis_guidance") or None,
+                visualization_hint=visualization_hint,
             )
-            st.session_state["visualization_source"] = visualization_hint
+        )
+        st.session_state["visualization_source"] = visualization_hint
     except ConfigurationError as error:
         st.error(str(error))
     except AccessDenied:
         st.error("Access denied before any analysis was started.")
     except Exception as error:  # noqa: BLE001 - safe_live_error prevents raw provider errors reaching the UI.
         st.error(safe_live_error(error))
+    finally:
+        loading_placeholder.empty()
 
 
 def _render_query(user_id: str, database: dict) -> None:
@@ -263,7 +289,7 @@ def _render_query(user_id: str, database: dict) -> None:
                 submitted = st.form_submit_button("Run", type="primary", width="stretch")
         _render_examples(database)
     if submitted:
-        _submit_request(user_id, database["id"])
+        _submit_request(user_id, database["id"], database["display_name"])
 
 
 def _render_source_selection(store, grants: list[str]) -> None:
@@ -295,62 +321,63 @@ def _render_result(database: dict) -> None:
     result = st.session_state.get("last_result")
     if not result:
         return
-    answer_tab, data_tab, details_tab = st.tabs(["Answer", "Data", "Run details"])
-    with answer_tab:
-        st.write(result.analysis.summary)
-        st.markdown(
-            f"<p class='scope-context'>{database['display_name']} · {format_result_scope(result.analysis, result.chart_spec)}</p>",
-            unsafe_allow_html=True,
-        )
-        if result.chart_spec:
-            try:
-                figure = render_chart(result.analysis, result.chart_spec, CompanyStyle(ROOT / "config" / "company_style.yaml"))
-                if figure:
-                    st.plotly_chart(figure, width="stretch")
-                if result.chart_spec.notes:
-                    st.caption(result.chart_spec.notes)
-            except Exception:  # noqa: BLE001 - renderer failure must preserve the successful analysis result.
-                st.warning("Visualization could not be rendered; the answer and data remain available.")
-        if result.visualization_warning:
-            st.warning(result.visualization_warning)
-    with data_tab:
-        if result.analysis.rows:
-            st.dataframe(pd.DataFrame(result.analysis.rows, columns=result.analysis.columns), width="stretch")
-        else:
-            st.info("No tabular rows were produced for this request.")
-        if result.analysis.truncated:
-            st.warning(f"Showing the first {result.analysis.row_limit} matching rows.")
-        for warning in result.analysis.warnings:
-            st.caption(warning)
-    with details_tab:
-        telemetry = result.telemetry
-        st.json(
-            {
-                "authorization": "allowed" if telemetry.acl_decision and telemetry.acl_decision.allowed else "denied",
-                "submitted_question": result.analysis.question,
-                "analysis_run_id": telemetry.run_id,
-                "outcome": telemetry.outcome,
-                "policy": telemetry.governance_policy,
-                "restricted_reference": telemetry.restricted_reference,
-                "analysis_agent_calls": telemetry.analysis_agent_calls,
-                "sql_execution_count": telemetry.sql_execution_count,
-                "visualization_runs": telemetry.visualization_runs,
-                "visualization_revision": telemetry.visualization_revision,
-                "analysis_reused": telemetry.analysis_reused,
-                "sql_executed": telemetry.sql_executed,
-                "tables_used": telemetry.tables_used,
-                "rows_returned": telemetry.rows_returned,
-                "row_limit": telemetry.row_limit,
-                "truncated": telemetry.truncated,
-                "sql_repairs": telemetry.sql_repairs,
-                "visualization": telemetry.chart_type,
-            }
-        )
-        with st.expander("Schema provenance"):
-            for item in telemetry.schema_provenance:
-                st.write(item)
-        with st.expander("Generated SQL"):
-            st.code("\n\n".join(telemetry.sql_queries) or "No query executed", language="sql")
+    with st.container(key="result-workspace"):
+        answer_tab, data_tab, details_tab = st.tabs(["Answer", "Data", "Run details"])
+        with answer_tab:
+            st.write(result.analysis.summary)
+            st.markdown(
+                f"<p class='scope-context'>{database['display_name']} · {format_result_scope(result.analysis, result.chart_spec)}</p>",
+                unsafe_allow_html=True,
+            )
+            if result.chart_spec:
+                try:
+                    figure = render_chart(result.analysis, result.chart_spec, CompanyStyle(ROOT / "config" / "company_style.yaml"))
+                    if figure:
+                        st.plotly_chart(figure, width="stretch")
+                    if result.chart_spec.notes:
+                        st.caption(result.chart_spec.notes)
+                except Exception:  # noqa: BLE001 - renderer failure must preserve the successful analysis result.
+                    st.warning("Visualization could not be rendered; the answer and data remain available.")
+            if result.visualization_warning:
+                st.warning(result.visualization_warning)
+        with data_tab:
+            if result.analysis.rows:
+                st.dataframe(pd.DataFrame(result.analysis.rows, columns=result.analysis.columns), width="stretch")
+            else:
+                st.info("No tabular rows were produced for this request.")
+            if result.analysis.truncated:
+                st.warning(f"Showing the first {result.analysis.row_limit} matching rows.")
+            for warning in result.analysis.warnings:
+                st.caption(warning)
+        with details_tab:
+            telemetry = result.telemetry
+            st.json(
+                {
+                    "authorization": "allowed" if telemetry.acl_decision and telemetry.acl_decision.allowed else "denied",
+                    "submitted_question": result.analysis.question,
+                    "analysis_run_id": telemetry.run_id,
+                    "outcome": telemetry.outcome,
+                    "policy": telemetry.governance_policy,
+                    "restricted_reference": telemetry.restricted_reference,
+                    "analysis_agent_calls": telemetry.analysis_agent_calls,
+                    "sql_execution_count": telemetry.sql_execution_count,
+                    "visualization_runs": telemetry.visualization_runs,
+                    "visualization_revision": telemetry.visualization_revision,
+                    "analysis_reused": telemetry.analysis_reused,
+                    "sql_executed": telemetry.sql_executed,
+                    "tables_used": telemetry.tables_used,
+                    "rows_returned": telemetry.rows_returned,
+                    "row_limit": telemetry.row_limit,
+                    "truncated": telemetry.truncated,
+                    "sql_repairs": telemetry.sql_repairs,
+                    "visualization": telemetry.chart_type,
+                }
+            )
+            with st.expander("Schema provenance"):
+                for item in telemetry.schema_provenance:
+                    st.write(item)
+            with st.expander("Generated SQL"):
+                st.code("\n\n".join(telemetry.sql_queries) or "No query executed", language="sql")
 
 
 def main() -> None:
