@@ -1,12 +1,12 @@
 """Executable evidence reporting for the governed analytics assignment."""
 
-from dataclasses import asdict, dataclass
-from datetime import datetime
 import json
 import os
-from pathlib import Path
 import subprocess
 import sys
+from dataclasses import asdict, dataclass
+from datetime import datetime
+from pathlib import Path
 from typing import Literal
 
 from .benchmark import (
@@ -108,15 +108,34 @@ def build_evaluation_payload(model: str, deterministic_cases: list[EvaluationCas
 
 
 def render_evaluation_markdown(payload: dict) -> str:
+    deterministic = payload["deterministic_checks"]
+    live = payload["live_gpt5_evaluations"]
+    executed_total = deterministic["total"] + live["total"]
+    executed_passed = deterministic["passed"] + live["passed"]
     lines = [
-        "# Governed Analytics Evaluation",
+        "# Governed self-service analytics — evaluation evidence",
+        "",
+        "Agentic where reasoning helps. Deterministic where correctness matters.",
+        "",
+        "Models propose; deterministic components authorize, execute, and render.",
         "",
         f"Model: `{payload['model']}`",
+        f"Generated: `{payload['generated_at']}`",
         "",
-        "## Evidence summary",
+        "## Result",
         "",
-        f"- Deterministic/local checks: {payload['deterministic_checks']['passed']} / {payload['deterministic_checks']['total']}",
-        f"- Live GPT-5 evaluations: {payload['live_gpt5_evaluations']['passed']} / {payload['live_gpt5_evaluations']['total']}",
+        "| Evaluation layer | Result |",
+        "| --- | ---: |",
+        f"| Deterministic / local | **{deterministic['passed']} / {deterministic['total']}** |",
+        f"| Live GPT-5 evaluations | **{live['passed']} / {live['total']}** |",
+        f"| Executed evaluation cases | **{executed_passed} / {executed_total}** |",
+        "",
+        (
+            "Live cases execute the real agent workflow and compare returned analytical rows and "
+            "visualization semantics against independently computed deterministic references."
+        ),
+        "",
+        "Evaluated against executable references, not judged by screenshots.",
         "",
         "## Category results",
         "",
@@ -131,7 +150,20 @@ def render_evaluation_markdown(payload: dict) -> str:
             f"| {case['name']} | {case['database']} | {case['category']} | {case['execution']} | "
             f"{case['expected']} | {case['result']} | {status} |"
         )
-    lines.extend(["", "## Current limitation", "", payload["limitation"], ""])
+    lines.extend([
+        "",
+        "## Current limitation",
+        "",
+        payload["limitation"],
+        "",
+        "## Scope of evidence",
+        "",
+        (
+            "These benchmarks demonstrate correctness on the supplied databases and representative "
+            "governance and failure paths; they are not a claim of universal natural-language-to-SQL accuracy."
+        ),
+        "",
+    ])
     return "\n".join(lines)
 
 

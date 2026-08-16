@@ -1,11 +1,23 @@
-# Governed Analytics Evaluation
+# Governed self-service analytics — evaluation evidence
+
+Agentic where reasoning helps. Deterministic where correctness matters.
+
+Models propose; deterministic components authorize, execute, and render.
 
 Model: `gpt-5`
+Generated: `2026-08-16T21:40:13Z`
 
-## Evidence summary
+## Result
 
-- Deterministic/local checks: 16 / 16
-- Live GPT-5 evaluations: 5 / 5
+| Evaluation layer | Result |
+| --- | ---: |
+| Deterministic / local | **16 / 16** |
+| Live GPT-5 evaluations | **5 / 5** |
+| Executed evaluation cases | **21 / 21** |
+
+Live cases execute the real agent workflow and compare returned analytical rows and visualization semantics against independently computed deterministic references.
+
+Evaluated against executable references, not judged by screenshots.
 
 ## Category results
 
@@ -37,12 +49,16 @@ Model: `gpt-5`
 | Dynamic onboarding | Sakila-shaped fixture | Database generalization | deterministic/local | Catalog/register/grant are configuration-driven | passed | PASS |
 | Supplied Sakila reference | Sakila | Database generalization | deterministic/local | Real category-revenue reference is available | passed | PASS |
 | Northwind declared-relationship boundary | Northwind | Database generalization | deterministic/local | Zero declared foreign keys is cataloged faithfully | passed | PASS |
-| Chinook top revenue countries | Chinook | Analysis correctness | live GPT-5 | Reference rows and expected bar chart type | Analysis rows and expected chart type match the deterministic reference | PASS |
-| Chinook temporal revenue | Chinook | Analysis correctness | live GPT-5 | Reference rows and expected line chart type | Analysis rows and expected chart type match the deterministic reference | PASS |
-| Chinook genre revenue | Chinook | Analysis correctness | live GPT-5 | Reference rows and expected bar chart type | Analysis rows and expected chart type match the deterministic reference | PASS |
-| Northwind category revenue | Northwind | Database generalization | live GPT-5 | Explicit net line-item revenue reference rows and expected bar chart type | Analysis rows and expected chart type match the deterministic reference | PASS |
-| Sakila category revenue | Sakila | Database generalization | live GPT-5 | Reference rows and expected bar chart type after temporary onboarding | Analysis rows and expected chart type match the deterministic reference | PASS |
+| Chinook top revenue countries | Chinook | Analysis correctness | live GPT-5 | Reference rows and bar semantics | Analysis rows and chart semantics match the deterministic revenue reference | PASS |
+| Chinook temporal revenue | Chinook | Analysis correctness | live GPT-5 | Reference rows and line semantics | Analysis rows and chart semantics match the deterministic temporal revenue reference | PASS |
+| Chinook genre revenue | Chinook | Analysis correctness | live GPT-5 | Reference rows and bar semantics | Analysis rows and chart semantics match the deterministic genre revenue reference | PASS |
+| Northwind category revenue | Northwind | Database generalization | live GPT-5 | Reference rows across undeclared relationships | Analysis rows and chart semantics match the deterministic Northwind category revenue reference | PASS |
+| Sakila category revenue | Sakila | Database generalization | live GPT-5 | Reference rows and bar semantics after temporary onboarding | Analysis rows and chart semantics match the deterministic Sakila category revenue reference | PASS |
 
 ## Current limitation
 
 Complex multi-objective questions may require decomposition into multiple analytical runs. Predictive concepts such as churn also require an explicit target/definition before analysis.
+
+## Scope of evidence
+
+These benchmarks demonstrate correctness on the supplied databases and representative governance and failure paths; they are not a claim of universal natural-language-to-SQL accuracy.
