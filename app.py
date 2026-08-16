@@ -157,10 +157,16 @@ st.markdown(
     .st-key-query-composer-running [data-testid='stButton'] > button > div {{ display: flex !important; align-items: center !important; justify-content: center !important; line-height: 1 !important; }}
     .st-key-query-composer [data-testid='stPopoverButton'],
     .st-key-query-composer-running [data-testid='stPopoverButton'] {{ width: 76px !important; height: 42px !important; min-height: 42px !important; padding: 0 8px !important; line-height: 1 !important; }}
+    .st-key-query-composer [data-testid='stPopoverButton'],
+    .st-key-query-composer-running [data-testid='stPopoverButton'] {{ display: flex !important; align-items: center !important; justify-content: center !important; }}
     .st-key-query-composer [data-testid='stPopoverButton'] > div,
     .st-key-query-composer-running [data-testid='stPopoverButton'] > div {{ display: flex !important; align-items: center !important; justify-content: center !important; width: 100% !important; line-height: 1 !important; }}
+    .st-key-query-composer [data-testid='stPopoverButton'] > div > div[aria-hidden='true'],
+    .st-key-query-composer-running [data-testid='stPopoverButton'] > div > div[aria-hidden='true'] {{ display: none !important; }}
+    .st-key-query-composer [data-testid='stPopoverButton'] > div,
+    .st-key-query-composer-running [data-testid='stPopoverButton'] > div {{ margin-right: 0 !important; }}
     .st-key-query-composer [data-testid='stPopoverButton'] [data-testid='stMarkdownContainer'] p,
-    .st-key-query-composer-running [data-testid='stPopoverButton'] [data-testid='stMarkdownContainer'] p {{ margin: 0 !important; line-height: 1 !important; }}
+    .st-key-query-composer-running [data-testid='stPopoverButton'] [data-testid='stMarkdownContainer'] p {{ display: flex !important; align-items: center !important; justify-content: center !important; height: 100% !important; margin: 0 !important; line-height: 1 !important; }}
     .st-key-query-composer [data-testid='stPopoverButton'] [data-testid='stIconMaterial'],
     .st-key-query-composer-running [data-testid='stPopoverButton'] [data-testid='stIconMaterial'] {{ display: none !important; }}
     [data-testid='stTabs'] [data-baseweb='tab-list'] {{ gap: 1.25rem; border-bottom: 1px solid {COLORS['border']}; }}
@@ -171,9 +177,11 @@ st.markdown(
     .st-key-example-row {{ margin-top: 1rem; }}
     .st-key-example-row [data-testid='stHorizontalBlock'] {{ display: flex !important; justify-content: flex-start; align-items: baseline !important; gap: 15px !important; }}
     .st-key-example-row [data-testid='stColumn'] {{ flex: 0 0 auto !important; width: auto !important; min-width: 0 !important; }}
-    .st-key-example-row [data-testid='stMarkdownContainer'] p {{ margin: 0 !important; color: {COLORS['muted']}; font-size: 12px; line-height: 1.4; white-space: nowrap; transform: translateY(-1px); }}
+    .st-key-example-row [data-testid='stMarkdownContainer'] p {{ margin: 0 !important; color: {COLORS['muted']}; font-size: 12px; line-height: 1.4; font-weight: 400 !important; white-space: nowrap; transform: translateY(-1px); }}
+    .st-key-example-row p.example-intro {{ font-weight: 650 !important; }}
+    .st-key-example-row [data-testid='stButton'] [data-testid='stMarkdownContainer'] p {{ font-weight: 400 !important; }}
     .st-key-example-row [data-testid='stButton'] {{ margin: 0 !important; }}
-    .st-key-example-row [data-testid='stButton'] button {{ min-height: 0; height: auto; border: 0; padding: 0; color: {COLORS['muted']}; background: transparent; font-size: 12px; line-height: 1.4; font-weight: 550; white-space: nowrap; }}
+    .st-key-example-row [data-testid='stButton'] button {{ min-height: 0; height: auto; border: 0; padding: 0; color: {COLORS['muted']}; background: transparent; font-size: 12px; line-height: 1.4; font-weight: 400; white-space: nowrap; }}
     .st-key-example-row [data-testid='stButton'] button:hover {{ color: {COLORS['accent']}; background: transparent; }}
     .st-key-analytical-stage {{ min-height: 330px; margin-top: 3rem; padding-top: 2rem; border-top: 1px solid {COLORS['border']}; }}
     .analysis-loading {{ min-height: 350px; display: grid; place-items: center; text-align: center; }}
@@ -402,6 +410,7 @@ def _render_query(user_id: str, database: dict) -> None:
                     key="question_draft",
                     placeholder=f"Ask a question about {database['display_name']}…",
                     label_visibility="collapsed",
+                    on_change=_begin_analysis,
                 )
             with options_column:
                 _render_options()
@@ -489,7 +498,14 @@ def _render_result(database: dict) -> None:
                 st.warning(result.visualization_warning)
         with data_tab:
             if result.analysis.rows:
-                st.dataframe(pd.DataFrame(result.analysis.rows, columns=result.analysis.columns), width="stretch")
+                data_frame = pd.DataFrame(result.analysis.rows, columns=result.analysis.columns)
+                numeric_column_config = {
+                    str(column): st.column_config.NumberColumn(format="%.2f")
+                    for column in data_frame.columns
+                    if pd.api.types.is_numeric_dtype(data_frame[column])
+                    and not pd.api.types.is_bool_dtype(data_frame[column])
+                }
+                st.dataframe(data_frame, column_config=numeric_column_config, width="stretch")
             else:
                 st.info("No tabular rows were produced for this request.")
             if result.analysis.truncated:
@@ -498,28 +514,30 @@ def _render_result(database: dict) -> None:
                 st.caption(warning)
         with details_tab:
             telemetry = result.telemetry
-            st.json(
-                {
-                    "authorization": "allowed" if telemetry.acl_decision and telemetry.acl_decision.allowed else "denied",
-                    "submitted_question": result.analysis.question,
-                    "analysis_run_id": telemetry.run_id,
-                    "outcome": telemetry.outcome,
-                    "policy": telemetry.governance_policy,
-                    "restricted_reference": telemetry.restricted_reference,
-                    "analysis_agent_calls": telemetry.analysis_agent_calls,
-                    "sql_execution_count": telemetry.sql_execution_count,
-                    "visualization_runs": telemetry.visualization_runs,
-                    "visualization_revision": telemetry.visualization_revision,
-                    "analysis_reused": telemetry.analysis_reused,
-                    "sql_executed": telemetry.sql_executed,
-                    "tables_used": telemetry.tables_used,
-                    "rows_returned": telemetry.rows_returned,
-                    "row_limit": telemetry.row_limit,
-                    "truncated": telemetry.truncated,
-                    "sql_repairs": telemetry.sql_repairs,
-                    "visualization": telemetry.chart_type,
-                }
-            )
+            with st.expander("Trace & telemetry"):
+                st.json(
+                    {
+                        "authorization": "allowed" if telemetry.acl_decision and telemetry.acl_decision.allowed else "denied",
+                        "submitted_question": result.analysis.question,
+                        "analysis_run_id": telemetry.run_id,
+                        "outcome": telemetry.outcome,
+                        "policy": telemetry.governance_policy,
+                        "restricted_reference": telemetry.restricted_reference,
+                        "analysis_agent_calls": telemetry.analysis_agent_calls,
+                        "sql_execution_count": telemetry.sql_execution_count,
+                        "visualization_runs": telemetry.visualization_runs,
+                        "visualization_revision": telemetry.visualization_revision,
+                        "analysis_reused": telemetry.analysis_reused,
+                        "sql_executed": telemetry.sql_executed,
+                        "tables_used": telemetry.tables_used,
+                        "rows_returned": telemetry.rows_returned,
+                        "row_limit": telemetry.row_limit,
+                        "truncated": telemetry.truncated,
+                        "sql_repairs": telemetry.sql_repairs,
+                        "visualization": telemetry.chart_type,
+                    },
+                    expanded=True,
+                )
             with st.expander("Schema provenance"):
                 for item in telemetry.schema_provenance:
                     st.write(item)
