@@ -130,21 +130,39 @@ st.markdown(
     .st-key-source-selection [data-testid='stButton'] button:hover::after {{ color: {COLORS['accent']}; transform: translateX(3px); }}
     .st-key-source-workspace .database-prompt h1 a,
     .st-key-source-workspace [data-testid='stHeadingWithActionElements'] a {{ display: none !important; }}
-    .st-key-query-composer [data-testid='stHorizontalBlock'] {{ display: flex !important; width: 100% !important; gap: 8px !important; align-items: center !important; }}
-    .st-key-query-composer [data-testid='stHorizontalBlock'] > [data-testid='stColumn']:first-child {{ flex: 1 1 auto !important; width: auto !important; min-width: 0 !important; }}
-    .st-key-query-composer [data-testid='stHorizontalBlock'] > [data-testid='stColumn']:nth-child(2) {{ flex: 0 0 76px !important; width: 76px !important; min-width: 76px !important; }}
+    .st-key-query-composer [data-testid='stHorizontalBlock'],
+    .st-key-query-composer-running [data-testid='stHorizontalBlock'] {{ display: flex !important; width: 100% !important; gap: 8px !important; align-items: center !important; }}
+    .st-key-query-composer [data-testid='stHorizontalBlock'] > [data-testid='stColumn']:first-child,
+    .st-key-query-composer-running [data-testid='stHorizontalBlock'] > [data-testid='stColumn']:first-child {{ flex: 1 1 auto !important; width: auto !important; min-width: 0 !important; }}
+    .st-key-query-composer [data-testid='stHorizontalBlock'] > [data-testid='stColumn']:nth-child(2),
+    .st-key-query-composer-running [data-testid='stHorizontalBlock'] > [data-testid='stColumn']:nth-child(2) {{ flex: 0 0 76px !important; width: 76px !important; min-width: 76px !important; }}
     .st-key-query-composer [data-testid='stHorizontalBlock'] > [data-testid='stColumn']:nth-child(3) {{ flex: 0 0 74px !important; width: 74px !important; min-width: 74px !important; }}
-    [data-testid='stTextInput'] input {{ height: 42px; border-color: {COLORS['control_border']}; border-radius: {STYLE_CONFIG['layout']['border_radius']}px; background: rgba(255, 255, 255, .84); color: {COLORS['ink']}; font-size: 13px; line-height: 1.4; }}
+    .st-key-query-composer-running [data-testid='stHorizontalBlock'] > [data-testid='stColumn']:nth-child(3) {{ flex: 0 0 98px !important; width: 98px !important; min-width: 98px !important; }}
+    [data-testid='stTextInput'] input {{ height: 42px; border-color: {COLORS['control_border']}; border-radius: {STYLE_CONFIG['layout']['border_radius']}px; background: rgba(255, 255, 255, .84); color: {COLORS['ink']}; font-size: 14px; line-height: 1.4; }}
     [data-testid='stTextInput'] input:focus {{ border-color: {COLORS['accent']}; box-shadow: 0 0 0 1px {COLORS['accent']}; }}
     [data-testid='stButton'] button {{ min-height: 42px; height: 42px; border-radius: {STYLE_CONFIG['layout']['border_radius']}px; box-shadow: none; transition: transform 150ms cubic-bezier(.16, 1, .3, 1), border-color 150ms cubic-bezier(.16, 1, .3, 1), background 150ms cubic-bezier(.16, 1, .3, 1); }}
     [data-testid='stButton'] button:active {{ transform: translateY(1px) scale(.985); }}
-    .st-key-query-composer [data-testid='stButton'] button {{ min-height: 42px; color: {COLORS['control_ink']}; font-size: .82rem; font-weight: 600; line-height: 1.2; padding: 0 8px; }}
+    .st-key-query-composer [data-testid='stButton'] button,
+    .st-key-query-composer-running [data-testid='stButton'] button {{ min-height: 42px; color: {COLORS['control_ink']}; font-size: .82rem; font-weight: 600; line-height: 1.2; padding: 0 8px; }}
     .st-key-query-composer [data-testid='stButton'] button[kind='primary'],
-    .st-key-query-composer [data-testid='stBaseButton-primary'] {{ background: {COLORS['accent']}; border-color: {COLORS['accent']}; color: {COLORS['surface']} !important; }}
-    .st-key-query-composer [data-testid='stButton'] > button > div {{ display: flex !important; align-items: center !important; justify-content: center !important; line-height: 1 !important; }}
-    .st-key-query-composer [data-testid='stPopoverButton'] {{ width: 76px !important; height: 42px !important; min-height: 42px !important; padding: 0 8px !important; line-height: 1 !important; }}
-    .st-key-query-composer [data-testid='stPopoverButton'] > div {{ display: flex !important; align-items: center !important; justify-content: center !important; width: 100% !important; line-height: 1 !important; }}
-    .st-key-query-composer [data-testid='stPopoverButton'] [data-testid='stIconMaterial'] {{ display: none !important; }}
+    .st-key-query-composer-running [data-testid='stButton'] button[kind='primary'],
+    .st-key-query-composer [data-testid='stBaseButton-primary'],
+    .st-key-query-composer-running [data-testid='stBaseButton-primary'] {{ background: {COLORS['accent']}; border-color: {COLORS['accent']}; color: {COLORS['surface']} !important; white-space: nowrap !important; }}
+    .st-key-query-composer [data-testid='stButton'] button[kind='primary'] *,
+    .st-key-query-composer-running [data-testid='stButton'] button[kind='primary'] *,
+    .st-key-query-composer [data-testid='stBaseButton-primary'] *,
+    .st-key-query-composer-running [data-testid='stBaseButton-primary'] * {{ color: {COLORS['surface']} !important; }}
+    .st-key-query-composer-running [data-testid='stButton'] button {{ min-width: 94px !important; white-space: nowrap !important; }}
+    .st-key-query-composer [data-testid='stButton'] > button > div,
+    .st-key-query-composer-running [data-testid='stButton'] > button > div {{ display: flex !important; align-items: center !important; justify-content: center !important; line-height: 1 !important; }}
+    .st-key-query-composer [data-testid='stPopoverButton'],
+    .st-key-query-composer-running [data-testid='stPopoverButton'] {{ width: 76px !important; height: 42px !important; min-height: 42px !important; padding: 0 8px !important; line-height: 1 !important; }}
+    .st-key-query-composer [data-testid='stPopoverButton'] > div,
+    .st-key-query-composer-running [data-testid='stPopoverButton'] > div {{ display: flex !important; align-items: center !important; justify-content: center !important; width: 100% !important; line-height: 1 !important; }}
+    .st-key-query-composer [data-testid='stPopoverButton'] [data-testid='stMarkdownContainer'] p,
+    .st-key-query-composer-running [data-testid='stPopoverButton'] [data-testid='stMarkdownContainer'] p {{ margin: 0 !important; line-height: 1 !important; }}
+    .st-key-query-composer [data-testid='stPopoverButton'] [data-testid='stIconMaterial'],
+    .st-key-query-composer-running [data-testid='stPopoverButton'] [data-testid='stIconMaterial'] {{ display: none !important; }}
     [data-testid='stTabs'] [data-baseweb='tab-list'] {{ gap: 1.25rem; border-bottom: 1px solid {COLORS['border']}; }}
     [data-testid='stTabs'] [data-baseweb='tab'] {{ padding-left: 0; padding-right: 0; }}
     [data-testid='stPlotlyChart'], [data-testid='stPlotlyChart'] > div {{ background: transparent; border: 0; box-shadow: none; }}
@@ -157,13 +175,13 @@ st.markdown(
     .st-key-example-row [data-testid='stButton'] button:hover {{ color: {COLORS['accent']}; background: transparent; }}
     .st-key-analytical-stage {{ min-height: 330px; margin-top: 3rem; padding-top: 2rem; border-top: 1px solid {COLORS['border']}; }}
     .analysis-loading {{ min-height: 350px; display: grid; place-items: center; text-align: center; }}
-    .analysis-loading-mark {{ position: relative; display: block; width: 38px; height: 38px; margin: 0 auto 1.15rem; }}
+    .analysis-loading-mark {{ position: relative; display: block; width: 40px; height: 40px; margin: 0 auto 20px; }}
     .analysis-loading-mark::before, .analysis-loading-mark::after {{ content: ''; position: absolute; border: 1.5px solid {COLORS['accent_faint']}; border-radius: 50%; }}
     .analysis-loading-mark::before {{ inset: 2px; }}
     .analysis-loading-mark::after {{ inset: 9px; border-color: {COLORS['accent']}; border-top-color: transparent; animation: analysis-orbit 1.5s linear infinite; }}
-    .analysis-loading-mark {{ background: radial-gradient(circle at center, {COLORS['accent']} 0 5px, transparent 5.5px); animation: analysis-breathe 1.5s cubic-bezier(.16, 1, .3, 1) infinite alternate; }}
-    .analysis-loading h2 {{ margin: 0; font-size: 1.2rem; letter-spacing: -.025em; font-weight: 650; }}
-    .analysis-loading p {{ margin: .3rem 0 0; color: {COLORS['muted']}; font-size: .84rem; }}
+    .analysis-loading-mark i {{ position: absolute; inset: 16px; display: block; border-radius: 50%; background: {COLORS['accent']}; animation: analysis-breathe 1.5s cubic-bezier(.16, 1, .3, 1) infinite alternate; }}
+    .analysis-loading h2 {{ margin: 0; font-size: 20px; letter-spacing: -.028em; font-weight: 670; }}
+    .analysis-loading p {{ margin: 5px 0 0; color: {COLORS['muted']}; font-size: 14px; }}
     .st-key-result-workspace {{ margin: 0; }}
     .st-key-answer-summary [data-testid='stMarkdownContainer'] > :first-child {{ max-width: 720px; margin-top: 0; font-size: 1.75rem; line-height: 1.2; letter-spacing: -.035em; font-weight: 680; text-wrap: balance; }}
     .st-key-answer-summary [data-testid='stMarkdownContainer'] p {{ max-width: 720px; line-height: 1.55; }}
@@ -320,7 +338,7 @@ def _render_examples(database: dict) -> None:
 
 def _render_analysis_loading(database_name: str) -> None:
     st.markdown(
-        f"<section class='analysis-loading'><div><span class='analysis-loading-mark'></span>"
+        f"<section class='analysis-loading'><div><span class='analysis-loading-mark'><i></i></span>"
         f"<h2>Analysing {escape(database_name)}</h2><p>Preparing your result…</p></div></section>",
         unsafe_allow_html=True,
     )
@@ -366,12 +384,13 @@ def _submit_request(user_id: str, database_id: str, database_name: str, stage_pl
 
 def _render_query(user_id: str, database: dict) -> None:
     running = bool(st.session_state.get("analysis_running"))
+    composer_key = "query-composer-running" if running else "query-composer"
     with st.container(key="composer-workspace"):
         st.markdown(
             "<div class='query-copy'><p class='starting-title'>Start with a question</p><p class='starting-copy'>Ask for a comparison, trend, or ranking from the selected source.</p></div>",
             unsafe_allow_html=True,
         )
-        with st.container(key="query-composer"):
+        with st.container(key=composer_key):
             question_column, options_column, run_column = st.columns([8, 1.35, 1])
             with question_column:
                 st.text_input(
@@ -384,7 +403,7 @@ def _render_query(user_id: str, database: dict) -> None:
                 _render_options()
             with run_column:
                 if running:
-                    st.button("Running…", type="primary", width="stretch", key="run_analysis_busy", disabled=True)
+                    st.button("Running...", type="primary", width="stretch", key="run_analysis_busy", disabled=True)
                 else:
                     st.button("Run", type="primary", width="stretch", key="run_analysis", on_click=_begin_analysis)
         _render_examples(database)
