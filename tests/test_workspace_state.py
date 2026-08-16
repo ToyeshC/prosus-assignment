@@ -45,6 +45,8 @@ def test_scope_switch_clears_question_draft_submitted_question_and_result():
         "submitted_question": "Question A",
         "last_result": object(),
         "result_context": object(),
+        "analysis_error": "A temporary error",
+        "analysis_running": True,
     }
 
     clear_analytical_state(state)
@@ -53,3 +55,5 @@ def test_scope_switch_clears_question_draft_submitted_question_and_result():
     assert state["submitted_question"] is None
     assert "last_result" not in state
     assert "result_context" not in state
+    assert "analysis_error" not in state
+    assert "analysis_running" not in state

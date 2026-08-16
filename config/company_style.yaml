@@ -11,6 +11,8 @@ colors:
   grid: "#EAECF0"
   accent: "#315EA8"
   accent_soft: "#EDF2FC"
+  avatar_surface: "#D9E4F8"
+  avatar_ink: "#244D90"
   accent_border: "#B6C8E9"
   accent_muted: "#A9BEE6"
   dot: "rgba(22, 24, 29, .035)"

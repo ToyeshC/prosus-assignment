@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import re
-from contextlib import nullcontext
 from html import escape
 
 import pandas as pd
@@ -36,20 +35,20 @@ st.markdown(
       background-size: 20px 20px;
       color: {COLORS['ink']};
     }}
-    .block-container {{ max-width: 980px; padding-top: 2.4rem; padding-bottom: 3.5rem; }}
+    .block-container {{ max-width: 1180px; padding: 3rem 2.75rem 5.5rem; }}
     h1, h2, h3, p, label {{ color: {COLORS['ink']}; font-family: {STYLE_CONFIG['fonts']['sans']}; }}
     [data-testid='stSidebar'] {{ display: none; }}
     [data-testid='stHeader'] {{ background: transparent; }}
-    .workspace-brand {{ font-size: .9rem; font-weight: 700; letter-spacing: -.02em; margin: 0; }}
-    .workspace-subtitle {{ display: none; }}
+    .st-key-workspace-header {{ padding-bottom: 1.05rem; border-bottom: 1px solid {COLORS['border']}; }}
+    .workspace-brand {{ margin: 0; font-size: 1rem; font-weight: 700; letter-spacing: -.025em; }}
     [data-testid='stPopoverButton'] > button {{
-      min-height: 34px;
+      min-height: 36px;
       border: 1px solid {COLORS['border']};
       border-radius: {STYLE_CONFIG['layout']['border_radius']}px;
       background: rgba(255, 255, 255, .76);
       color: {COLORS['control_ink']};
-      font-size: .78rem;
-      font-weight: 500;
+      font-size: .82rem;
+      font-weight: 550;
       transition: transform 180ms cubic-bezier(.16, 1, .3, 1), border-color 180ms cubic-bezier(.16, 1, .3, 1), background 180ms cubic-bezier(.16, 1, .3, 1);
     }}
     [data-testid='stPopoverButton'] > button:hover, [data-testid='stPopoverButton'] > button:focus-visible {{
@@ -57,38 +56,45 @@ st.markdown(
       border-color: {COLORS['accent_border']};
       background: {COLORS['surface']};
     }}
-    .scope-context {{ color: {COLORS['muted']}; font-size: .88rem; margin: .2rem 0 1.15rem; }}
-    .st-key-starting-surface {{ max-width: 815px; margin: 4.35rem auto 0; padding-top: 1.4rem; border-top: 1px solid {COLORS['border']}; }}
-    .st-key-starting-surface p {{ margin: 0 0 1rem; }}
-    .st-key-starting-surface .starting-title {{ font-size: 1.06rem; font-weight: 650; letter-spacing: -.025em; }}
-    .st-key-starting-surface .starting-copy, .example-intro {{ color: {COLORS['muted']}; font-size: .82rem; }}
+    .st-key-user-session [data-testid='stPopoverButton'] > button::before {{
+      content: var(--demo-user-initials); display: inline-grid; width: 19px; height: 19px; place-items: center;
+      margin-right: 7px; border-radius: 50%; background: {COLORS['avatar_surface']}; color: {COLORS['avatar_ink']}; font-size: 9px; font-weight: 750;
+    }}
+    .st-key-database-session [data-testid='stPopoverButton'] > button::before {{
+      content: '▦'; margin-right: 6px; color: {COLORS['accent']}; font-size: .82rem; font-weight: 600;
+    }}
+    .st-key-composer-workspace {{ margin-top: 4rem; }}
+    .query-copy {{ margin: 0 0 1rem; }}
+    .query-copy .starting-title {{ margin: 0 0 4px; font-size: 1.28rem; font-weight: 670; letter-spacing: -.028em; }}
+    .query-copy .starting-copy {{ margin: 0; color: {COLORS['muted']}; font-size: .9rem; }}
     .empty-workspace {{ max-width: 34rem; margin: 6rem auto; text-align: center; }}
     .empty-workspace h2 {{ font-size: 1.4rem; font-weight: 600; margin-bottom: .35rem; }}
     .empty-workspace p {{ color: {COLORS['muted']}; line-height: 1.55; }}
     .empty-workspace .empty-support {{ margin-top: .65rem; font-size: .9rem; }}
-    .database-prompt {{ margin: 4.8rem auto 0; max-width: 680px; color: {COLORS['muted']}; }}
-    .database-prompt strong {{ color: {COLORS['ink']}; font-size: 1.06rem; font-weight: 650; letter-spacing: -.025em; }}
-    .st-key-source-selection {{ max-width: 680px; margin: 1.2rem auto 0; border-top: 1px solid {COLORS['border']}; }}
-    .st-key-source-selection [data-testid='stButton'] button {{ border: 0; border-bottom: 1px solid {COLORS['border']}; border-radius: 0; background: transparent; color: {COLORS['ink']}; justify-content: space-between; padding: .88rem 0; text-align: left; font-size: .88rem; font-weight: 600; transition: transform 180ms cubic-bezier(.16, 1, .3, 1), color 180ms cubic-bezier(.16, 1, .3, 1), border-color 180ms cubic-bezier(.16, 1, .3, 1); }}
+    .database-prompt {{ max-width: 1010px; margin: 6rem auto 0; color: {COLORS['muted']}; }}
+    .database-prompt strong {{ color: {COLORS['ink']}; font-size: 1.32rem; font-weight: 670; letter-spacing: -.028em; }}
+    .st-key-source-selection {{ max-width: 1010px; margin: 2rem auto 0; border-top: 1px solid {COLORS['border']}; }}
+    .st-key-source-selection [data-testid='stButton'] button {{ min-height: 68px; border: 0; border-bottom: 1px solid {COLORS['border']}; border-radius: 0; background: transparent; color: {COLORS['ink']}; justify-content: space-between; padding: 0; text-align: left; font-size: .96rem; font-weight: 620; transition: transform 180ms cubic-bezier(.16, 1, .3, 1), color 180ms cubic-bezier(.16, 1, .3, 1), border-color 180ms cubic-bezier(.16, 1, .3, 1); }}
     .st-key-source-selection [data-testid='stButton'] button [data-testid='stMarkdownContainer'] {{ width: 100%; text-align: left; }}
     .st-key-source-selection [data-testid='stButton'] button::after {{ content: '→'; color: {COLORS['ink']}; font-size: 1.12rem; font-weight: 400; }}
     .st-key-source-selection [data-testid='stButton'] button:hover, .st-key-source-selection [data-testid='stButton'] button:focus-visible {{ background: transparent; color: {COLORS['accent']}; border-bottom-color: {COLORS['accent_muted']}; transform: translateX(4px); }}
     .st-key-source-selection [data-testid='stButton'] button:hover::after {{ color: {COLORS['accent']}; transform: translateX(3px); }}
-    [data-testid='stTextInput'] input {{ height: 42px; border-color: {COLORS['control_border']}; border-radius: {STYLE_CONFIG['layout']['border_radius']}px; background: rgba(255, 255, 255, .84); color: {COLORS['ink']}; font-size: .82rem; }}
+    [data-testid='stTextInput'] input {{ height: 42px; border-color: {COLORS['control_border']}; border-radius: {STYLE_CONFIG['layout']['border_radius']}px; background: rgba(255, 255, 255, .84); color: {COLORS['ink']}; font-size: .86rem; }}
     [data-testid='stTextInput'] input:focus {{ border-color: {COLORS['accent']}; box-shadow: 0 0 0 1px {COLORS['accent']}; }}
     [data-testid='stButton'] button {{ min-height: 42px; border-radius: {STYLE_CONFIG['layout']['border_radius']}px; box-shadow: none; transition: transform 150ms cubic-bezier(.16, 1, .3, 1), border-color 150ms cubic-bezier(.16, 1, .3, 1), background 150ms cubic-bezier(.16, 1, .3, 1); }}
     [data-testid='stButton'] button:active {{ transform: translateY(1px) scale(.985); }}
-    .st-key-query-composer [data-testid='stButton'] button {{ min-height: 42px; color: {COLORS['control_ink']}; font-size: .82rem; font-weight: 600; }}
+    .st-key-query-composer [data-testid='stButton'] button {{ min-height: 42px; color: {COLORS['control_ink']}; font-size: .84rem; font-weight: 600; }}
     .st-key-query-composer [data-testid='stButton'] button[kind='primary'] {{ background: {COLORS['accent']}; border-color: {COLORS['accent']}; color: {COLORS['surface']}; }}
     [data-testid='stTabs'] [data-baseweb='tab-list'] {{ gap: 1.25rem; border-bottom: 1px solid {COLORS['border']}; }}
     [data-testid='stTabs'] [data-baseweb='tab'] {{ padding-left: 0; padding-right: 0; }}
     [data-testid='stPlotlyChart'], [data-testid='stPlotlyChart'] > div {{ background: transparent; border: 0; box-shadow: none; }}
-    .st-key-example-row {{ margin-top: 1rem; }}
+    .st-key-example-row {{ margin-top: .95rem; }}
     .st-key-example-row [data-testid='stHorizontalBlock'] {{ justify-content: flex-start; gap: 15px; }}
     .st-key-example-row [data-testid='stColumn'] {{ flex: 0 0 auto !important; width: auto !important; min-width: 0 !important; }}
-    .st-key-example-row [data-testid='stButton'] button {{ min-height: 0; border: 0; padding: 0; color: {COLORS['muted']}; background: transparent; font-size: .76rem; }}
+    .st-key-example-row [data-testid='stButton'] button {{ min-height: 0; border: 0; padding: 0; color: {COLORS['muted']}; background: transparent; font-size: .78rem; }}
     .st-key-example-row [data-testid='stButton'] button:hover {{ color: {COLORS['accent']}; background: transparent; }}
-    .analysis-loading {{ min-height: 28rem; display: grid; place-items: center; text-align: center; }}
+    .st-key-analytical-stage {{ min-height: 330px; margin-top: 3rem; padding-top: 2rem; border-top: 1px solid {COLORS['border']}; }}
+    .analysis-loading {{ min-height: 350px; display: grid; place-items: center; text-align: center; }}
     .analysis-loading-mark {{ position: relative; display: block; width: 38px; height: 38px; margin: 0 auto 1.15rem; }}
     .analysis-loading-mark::before, .analysis-loading-mark::after {{ content: ''; position: absolute; border: 1.5px solid {COLORS['accent_faint']}; border-radius: 50%; }}
     .analysis-loading-mark::before {{ inset: 2px; }}
@@ -96,11 +102,11 @@ st.markdown(
     .analysis-loading-mark {{ background: radial-gradient(circle at center, {COLORS['accent']} 0 5px, transparent 5.5px); animation: analysis-breathe 1.5s cubic-bezier(.16, 1, .3, 1) infinite alternate; }}
     .analysis-loading h2 {{ margin: 0; font-size: 1.2rem; letter-spacing: -.025em; font-weight: 650; }}
     .analysis-loading p {{ margin: .3rem 0 0; color: {COLORS['muted']}; font-size: .84rem; }}
-    .st-key-result-workspace {{ max-width: 815px; margin: 3rem auto 0; }}
-    .st-key-answer-summary [data-testid='stMarkdownContainer'] > :first-child {{ max-width: 650px; margin-top: 0; font-size: 1.55rem; line-height: 1.28; letter-spacing: -.03em; font-weight: 650; }}
-    .st-key-answer-summary [data-testid='stMarkdownContainer'] p {{ max-width: 650px; line-height: 1.55; }}
+    .st-key-result-workspace {{ margin: 0; }}
+    .st-key-answer-summary [data-testid='stMarkdownContainer'] > :first-child {{ max-width: 720px; margin-top: 0; font-size: 1.75rem; line-height: 1.2; letter-spacing: -.035em; font-weight: 680; text-wrap: balance; }}
+    .st-key-answer-summary [data-testid='stMarkdownContainer'] p {{ max-width: 720px; line-height: 1.55; }}
     .st-key-answer-summary [data-testid='stMarkdownContainer'] ul {{ margin-top: .7rem; padding-left: 1.25rem; }}
-    .st-key-result-workspace .scope-context {{ margin-top: .55rem; margin-bottom: 1.45rem; color: {COLORS['muted']}; font-size: .76rem; font-weight: 500; }}
+    .st-key-result-workspace .scope-context {{ margin-top: .7rem; margin-bottom: 1.8rem; color: {COLORS['muted']}; font-size: .82rem; font-weight: 500; }}
     .st-key-result-workspace .scope-context strong {{ color: {COLORS['control_ink']}; font-weight: 650; }}
     @keyframes analysis-orbit {{ to {{ transform: rotate(360deg); }} }}
     @keyframes analysis-breathe {{ to {{ transform: scale(.76); opacity: .7; }} }}
@@ -162,30 +168,34 @@ def _example_label(label: str) -> str:
 
 def _render_header(store, user_id: str, grants: list[str]) -> None:
     user = store.user(user_id)
-    brand, _, user_slot, database_slot = st.columns([5.5, 1.1, 1.7, 1.7])
-    with brand:
-        st.markdown("<p class='workspace-brand'>Analytics Command Center</p>", unsafe_allow_html=True)
-    with user_slot, st.popover(f"{user['display_name']}  ▾", width="stretch"):
-        st.caption("Switch demo user")
-        for candidate_id, candidate in store.acl()["users"].items():
-            active = candidate_id == user_id
-            label = f"{_initials(candidate['display_name'])}  {candidate['display_name']}"
-            if st.button(label, key=f"demo_user_{candidate_id}", width="stretch", disabled=active):
-                _switch_demo_user(store, candidate_id)
-                st.rerun()
-    selected = st.session_state.get("selected_database_id")
-    database_label = store.database(selected)["display_name"] if selected else "Select database"
-    with database_slot, st.popover(f"{database_label}  ▾", width="stretch"):
-        if not grants:
-            st.caption("No data sources assigned")
-        else:
-            for database_id in grants:
-                database = store.database(database_id)
-                active = database_id == selected
-                label = database["display_name"]
-                if st.button(label, key=f"database_{database_id}", width="stretch", disabled=active):
-                    _select_database(database_id)
-                    st.rerun()
+    with st.container(key="workspace-header"):
+        brand, _, user_slot, database_slot = st.columns([6.1, 2.0, 1.6, 1.7])
+        with brand:
+            st.markdown("<p class='workspace-brand'>Analytics Command Center</p>", unsafe_allow_html=True)
+        with user_slot, st.container(key="user-session"):
+            initials = _initials(user["display_name"])
+            st.markdown(f"<style>.st-key-user-session {{ --demo-user-initials: '{initials}'; }}</style>", unsafe_allow_html=True)
+            with st.popover(f"{user['display_name']}  ▾", width="stretch"):
+                st.caption("Switch demo user")
+                for candidate_id, candidate in store.acl()["users"].items():
+                    active = candidate_id == user_id
+                    label = f"{_initials(candidate['display_name'])}  {candidate['display_name']}"
+                    if st.button(label, key=f"demo_user_{candidate_id}", width="stretch", disabled=active):
+                        _switch_demo_user(store, candidate_id)
+                        st.rerun()
+        selected = st.session_state.get("selected_database_id")
+        database_label = store.database(selected)["display_name"] if selected else "Select database"
+        with database_slot, st.container(key="database-session"), st.popover(f"{database_label}  ▾", width="stretch"):
+            if not grants:
+                st.caption("No data sources assigned")
+            else:
+                for database_id in grants:
+                    database = store.database(database_id)
+                    active = database_id == selected
+                    label = database["display_name"]
+                    if st.button(label, key=f"database_{database_id}", width="stretch", disabled=active):
+                        _select_database(database_id)
+                        st.rerun()
 
 
 def _render_options() -> None:
@@ -241,16 +251,22 @@ def _render_analysis_loading(database_name: str) -> None:
     )
 
 
-def _submit_request(user_id: str, database_id: str, database_name: str) -> None:
+def _begin_analysis() -> None:
+    if not st.session_state.get("question_draft", "").strip():
+        st.session_state["analysis_error"] = "Enter a question before running analysis."
+        return
+    st.session_state["analysis_running"] = True
+
+
+def _submit_request(user_id: str, database_id: str, database_name: str, stage_placeholder) -> None:
     question = st.session_state.get("question_draft", "")
     if not question.strip():
-        st.warning("Enter a question before running analysis.")
+        st.session_state["analysis_error"] = "Enter a question before running analysis."
         return
     question = record_submitted_question(st.session_state)
     visualization_hint = _request_visualization_hint()
-    loading_placeholder = st.empty()
     try:
-        with loading_placeholder.container():
+        with stage_placeholder.container():
             _render_analysis_loading(database_name)
         st.session_state["last_result"] = analytics_service().run(
             AnalysisRequest(
@@ -264,24 +280,22 @@ def _submit_request(user_id: str, database_id: str, database_name: str) -> None:
         )
         st.session_state["visualization_source"] = visualization_hint
     except ConfigurationError as error:
-        st.error(str(error))
+        st.session_state["analysis_error"] = str(error)
     except AccessDenied:
-        st.error("Access denied before any analysis was started.")
+        st.session_state["analysis_error"] = "Access denied before any analysis was started."
     except Exception as error:  # noqa: BLE001 - safe_live_error prevents raw provider errors reaching the UI.
-        st.error(safe_live_error(error))
+        st.session_state["analysis_error"] = safe_live_error(error)
     finally:
-        loading_placeholder.empty()
+        st.session_state["analysis_running"] = False
 
 
 def _render_query(user_id: str, database: dict) -> None:
-    no_result_yet = not st.session_state.get("last_result")
-    surface = st.container(key="starting-surface") if no_result_yet else nullcontext()
-    with surface:
-        if no_result_yet:
-            st.markdown(
-                "<p class='starting-title'>Start with a question</p><p class='starting-copy'>Ask for a comparison, trend, or ranking from the selected source.</p>",
-                unsafe_allow_html=True,
-            )
+    running = bool(st.session_state.get("analysis_running"))
+    with st.container(key="composer-workspace"):
+        st.markdown(
+            "<div class='query-copy'><p class='starting-title'>Start with a question</p><p class='starting-copy'>Ask for a comparison, trend, or ranking from the selected source.</p></div>",
+            unsafe_allow_html=True,
+        )
         with st.container(key="query-composer"):
             question_column, options_column, run_column = st.columns([8, 1.35, 1])
             with question_column:
@@ -294,10 +308,24 @@ def _render_query(user_id: str, database: dict) -> None:
             with options_column:
                 _render_options()
             with run_column:
-                submitted = st.button("Run", type="primary", width="stretch", key="run_analysis")
+                if running:
+                    st.button("Running…", type="primary", width="stretch", key="run_analysis_busy", disabled=True)
+                else:
+                    st.button("Run", type="primary", width="stretch", key="run_analysis", on_click=_begin_analysis)
         _render_examples(database)
-    if submitted:
-        _submit_request(user_id, database["id"], database["display_name"])
+        with st.container(key="analytical-stage"):
+            stage_placeholder = st.empty()
+
+    if running:
+        _submit_request(user_id, database["id"], database["display_name"], stage_placeholder)
+        st.rerun()
+
+    _revisualize_if_requested()
+    with stage_placeholder.container():
+        analysis_error = st.session_state.pop("analysis_error", None)
+        if analysis_error:
+            st.error(analysis_error)
+        _render_result(database)
 
 
 def _render_source_selection(store, grants: list[str]) -> None:
@@ -414,8 +442,6 @@ def main() -> None:
 
     database = {**store.database(database_id), "id": database_id}
     _render_query(user_id, database)
-    _revisualize_if_requested()
-    _render_result(database)
 
 
 if __name__ == "__main__":

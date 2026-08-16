@@ -7,6 +7,8 @@ QUESTION_DRAFT_KEY = "question_draft"
 SUBMITTED_QUESTION_KEY = "submitted_question"
 _LEGACY_QUESTION_WIDGET_KEY = "question_input"
 _RESULT_STATE_KEYS = (
+    "analysis_error",
+    "analysis_running",
     "last_result",
     "result_context",
     "visualization_source",

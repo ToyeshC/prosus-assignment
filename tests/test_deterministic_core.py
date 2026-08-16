@@ -78,6 +78,8 @@ def test_renderer_uses_shared_company_tokens():
     assert figure.data[0].marker.color == style.colors["accent"]
     assert style.colors["faint"] == "#98A2B3"
     assert style.colors["accent_soft"] == "#EDF2FC"
+    assert style.colors["avatar_surface"] == "#D9E4F8"
+    assert style.colors["avatar_ink"] == "#244D90"
 
 
 def test_table_chart_returns_no_plot():
