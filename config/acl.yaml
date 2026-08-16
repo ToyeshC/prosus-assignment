@@ -1,10 +1,14 @@
 users:
   toyesh:
     display_name: Toyesh
-    databases: [chinook, northwind]
+    databases:
+    - chinook
+    - northwind
+    - sakila
   alfred:
     display_name: Alfred
-    databases: [chinook]
+    databases:
+    - chinook
   donne:
     display_name: Donné
     databases: []

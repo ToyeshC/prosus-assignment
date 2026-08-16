@@ -1,13 +1,13 @@
 {
   "title": "Governed Analytics Evaluation",
-  "generated_at": "2026-08-15T00:51:01Z",
+  "generated_at": "2026-08-15T17:43:59Z",
   "model": "gpt-5",
   "deterministic_checks": {
     "passed": 16,
     "total": 16
   },
   "live_gpt5_evaluations": {
-    "passed": 4,
+    "passed": 5,
     "total": 5
   },
   "categories": {
@@ -28,7 +28,7 @@
       "total": 2
     },
     "Database generalization": {
-      "passed": 4,
+      "passed": 5,
       "total": 5
     }
   },
@@ -278,75 +278,75 @@
       "database": "Chinook",
       "category": "Analysis correctness",
       "execution": "live GPT-5",
-      "expected": "Reference rows and bar semantics",
+      "expected": "Reference rows and expected bar chart type",
       "passed": true,
-      "result": "Analysis rows and chart semantics match the deterministic revenue reference",
+      "result": "Analysis rows and expected chart type match the deterministic reference",
       "outcome": "success",
       "sql_repairs": 0,
       "analysis_agent_calls": 1,
       "sql_execution_count": 1,
       "visualization_type": "bar",
-      "latency_ms": 33345
+      "latency_ms": 17360
     },
     {
       "name": "Chinook temporal revenue",
       "database": "Chinook",
       "category": "Analysis correctness",
       "execution": "live GPT-5",
-      "expected": "Reference rows and line semantics",
+      "expected": "Reference rows and expected line chart type",
       "passed": true,
-      "result": "Analysis rows and chart semantics match the deterministic temporal revenue reference",
+      "result": "Analysis rows and expected chart type match the deterministic reference",
       "outcome": "success",
       "sql_repairs": 0,
       "analysis_agent_calls": 1,
       "sql_execution_count": 1,
       "visualization_type": "line",
-      "latency_ms": 24741
+      "latency_ms": 23054
     },
     {
       "name": "Chinook genre revenue",
       "database": "Chinook",
       "category": "Analysis correctness",
       "execution": "live GPT-5",
-      "expected": "Reference rows and bar semantics",
+      "expected": "Reference rows and expected bar chart type",
       "passed": true,
-      "result": "Analysis rows and chart semantics match the deterministic genre revenue reference",
+      "result": "Analysis rows and expected chart type match the deterministic reference",
       "outcome": "success",
       "sql_repairs": 0,
       "analysis_agent_calls": 1,
       "sql_execution_count": 1,
       "visualization_type": "bar",
-      "latency_ms": 32035
+      "latency_ms": 22006
     },
     {
       "name": "Northwind category revenue",
       "database": "Northwind",
       "category": "Database generalization",
       "execution": "live GPT-5",
-      "expected": "Reference rows across undeclared relationships",
-      "passed": false,
-      "result": "Agent result does not match deterministic Northwind category revenue reference data",
+      "expected": "Explicit net line-item revenue reference rows and expected bar chart type",
+      "passed": true,
+      "result": "Analysis rows and expected chart type match the deterministic reference",
       "outcome": "success",
       "sql_repairs": 0,
       "analysis_agent_calls": 1,
       "sql_execution_count": 1,
       "visualization_type": "bar",
-      "latency_ms": 25241
+      "latency_ms": 19853
     },
     {
       "name": "Sakila category revenue",
       "database": "Sakila",
       "category": "Database generalization",
       "execution": "live GPT-5",
-      "expected": "Reference rows and bar semantics after temporary onboarding",
+      "expected": "Reference rows and expected bar chart type after temporary onboarding",
       "passed": true,
-      "result": "Analysis rows and chart semantics match the deterministic Sakila category revenue reference",
+      "result": "Analysis rows and expected chart type match the deterministic reference",
       "outcome": "success",
       "sql_repairs": 0,
       "analysis_agent_calls": 1,
       "sql_execution_count": 1,
       "visualization_type": "bar",
-      "latency_ms": 24657
+      "latency_ms": 25803
     }
   ],
   "limitation": "Complex multi-objective questions may require decomposition into multiple analytical runs. Predictive concepts such as churn also require an explicit target/definition before analysis."

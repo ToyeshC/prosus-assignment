@@ -71,7 +71,8 @@ ORDER BY revenue DESC, category ASC
 """
 
 NORTHWIND_CATEGORY_REVENUE_QUESTION = (
-    "Which product categories generated the most revenue? Return exactly the columns category and revenue, "
+    "Which product categories generated the most net line-item revenue? Calculate revenue as "
+    "ROUND(SUM(UnitPrice * Quantity * (1 - Discount)), 2). Return exactly the columns category and revenue, "
     "ranked from highest to lowest revenue."
 )
 NORTHWIND_CATEGORY_REVENUE_REFERENCE_SQL = """

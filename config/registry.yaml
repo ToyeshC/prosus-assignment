@@ -21,3 +21,8 @@ databases:
       question: Which product categories generated the most sales?
     - label: 📦 Orders over time
       question: How have orders changed over time?
+  sakila:
+    display_name: Sakila
+    adapter: sqlite
+    path: /Users/toyesh/Documents/Personal/Coding/prosus-assignment/datasets/sakila.db
+    enabled: true

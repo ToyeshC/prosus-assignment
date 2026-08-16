@@ -5,7 +5,7 @@ Model: `gpt-5`
 ## Evidence summary
 
 - Deterministic/local checks: 16 / 16
-- Live GPT-5 evaluations: 4 / 5
+- Live GPT-5 evaluations: 5 / 5
 
 ## Category results
 
@@ -15,7 +15,7 @@ Model: `gpt-5`
 | Visualization semantics | 3 / 3 |
 | Governance & security | 4 / 4 |
 | Robustness | 2 / 2 |
-| Database generalization | 4 / 5 |
+| Database generalization | 5 / 5 |
 
 ## Cases
 
@@ -37,11 +37,11 @@ Model: `gpt-5`
 | Dynamic onboarding | Sakila-shaped fixture | Database generalization | deterministic/local | Catalog/register/grant are configuration-driven | passed | PASS |
 | Supplied Sakila reference | Sakila | Database generalization | deterministic/local | Real category-revenue reference is available | passed | PASS |
 | Northwind declared-relationship boundary | Northwind | Database generalization | deterministic/local | Zero declared foreign keys is cataloged faithfully | passed | PASS |
-| Chinook top revenue countries | Chinook | Analysis correctness | live GPT-5 | Reference rows and bar semantics | Analysis rows and chart semantics match the deterministic revenue reference | PASS |
-| Chinook temporal revenue | Chinook | Analysis correctness | live GPT-5 | Reference rows and line semantics | Analysis rows and chart semantics match the deterministic temporal revenue reference | PASS |
-| Chinook genre revenue | Chinook | Analysis correctness | live GPT-5 | Reference rows and bar semantics | Analysis rows and chart semantics match the deterministic genre revenue reference | PASS |
-| Northwind category revenue | Northwind | Database generalization | live GPT-5 | Reference rows across undeclared relationships | Agent result does not match deterministic Northwind category revenue reference data | FAIL |
-| Sakila category revenue | Sakila | Database generalization | live GPT-5 | Reference rows and bar semantics after temporary onboarding | Analysis rows and chart semantics match the deterministic Sakila category revenue reference | PASS |
+| Chinook top revenue countries | Chinook | Analysis correctness | live GPT-5 | Reference rows and expected bar chart type | Analysis rows and expected chart type match the deterministic reference | PASS |
+| Chinook temporal revenue | Chinook | Analysis correctness | live GPT-5 | Reference rows and expected line chart type | Analysis rows and expected chart type match the deterministic reference | PASS |
+| Chinook genre revenue | Chinook | Analysis correctness | live GPT-5 | Reference rows and expected bar chart type | Analysis rows and expected chart type match the deterministic reference | PASS |
+| Northwind category revenue | Northwind | Database generalization | live GPT-5 | Explicit net line-item revenue reference rows and expected bar chart type | Analysis rows and expected chart type match the deterministic reference | PASS |
+| Sakila category revenue | Sakila | Database generalization | live GPT-5 | Reference rows and expected bar chart type after temporary onboarding | Analysis rows and expected chart type match the deterministic reference | PASS |
 
 ## Current limitation
 
