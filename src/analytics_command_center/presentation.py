@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from html import escape
 
 import pandas as pd
 
@@ -10,6 +11,18 @@ from .models import AnalysisResult, ChartSpec
 
 _TIME_DIMENSION = re.compile(r"(?:date|day|week|month|quarter|year|time|period)", re.IGNORECASE)
 _DISPLAY_LABEL = re.compile(r"^[A-Za-z]+(?:[ -][A-Za-z]+)?$")
+
+
+def prepare_summary_display(summary: str) -> tuple[str, str]:
+    """Return a controlled typography mode and escaped plain-text HTML."""
+    text = summary.strip()
+    list_like = bool(
+        re.search(r"(?:^|\n)\s*(?:[-*•]|\d+[.)])\s+", text)
+        or text.count(",") >= 3
+        or text.count(";") >= 2
+    )
+    mode = "body" if len(text) > 180 or "\n" in text or list_like else "headline"
+    return mode, escape(text).replace("\n", "<br>")
 
 
 def format_result_scope(analysis: AnalysisResult, spec: ChartSpec | None) -> str:

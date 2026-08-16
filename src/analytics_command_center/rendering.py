@@ -68,69 +68,85 @@ def render_chart(analysis: AnalysisResult, spec: ChartSpec, style: CompanyStyle)
     if spec.chart_type in {"none", "table"}:
         return None
     frame, display_note = _display_frame(analysis, spec)
-    category_orders = None
-    if spec.label_fields:
-        missing = [field for field in spec.label_fields if field not in frame.columns]
-        if missing:
-            raise ValueError("Chart label fields are not present in the analysis result")
-        frame = frame.copy()
-        frame["__display_label"] = frame[spec.label_fields].fillna("").astype(str).agg(" · ".join, axis=1)
-        category_orders = {"__display_label": frame["__display_label"].tolist()}
-        spec = spec.model_copy(update={"x": "__display_label"})
-    if frame.empty:
-        return None
-    _validate_chart_spec_for_frame(spec, frame)
     prepared = _prepare_plot_frame(frame, spec)
     frame = prepared.frame
+    category_orders = None
+    plot_spec = spec
+    safe_label_fields = _safe_label_fields(frame, spec)
+    if safe_label_fields and not prepared.temporal and len(safe_label_fields) > 1:
+        frame = frame.copy()
+        frame["__display_label"] = frame[safe_label_fields].fillna("").astype(str).agg(" · ".join, axis=1)
+        category_orders = {"__display_label": frame["__display_label"].tolist()}
+        plot_spec = spec.model_copy(update={"x": "__display_label"})
+    if frame.empty:
+        return None
+    _validate_chart_spec_for_frame(plot_spec, frame)
     custom_data_fields = _custom_data_fields(spec, prepared)
     palette = _chart_palette(style)
     discrete_color = [style.colors["accent"]]
-    if spec.chart_type == "bar":
-        figure = px.bar(frame, x=spec.x, y=spec.y, color_discrete_sequence=discrete_color, custom_data=custom_data_fields, category_orders=category_orders)
-    elif spec.chart_type == "line":
-        figure = px.line(frame, x=spec.x, y=spec.y, color_discrete_sequence=discrete_color, custom_data=custom_data_fields, category_orders=category_orders)
-    elif spec.chart_type == "scatter":
-        figure = px.scatter(frame, x=spec.x, y=spec.y, color_discrete_sequence=discrete_color, custom_data=custom_data_fields, category_orders=category_orders)
-    elif spec.chart_type == "histogram":
-        figure = px.histogram(frame, x=spec.x, color_discrete_sequence=discrete_color)
-    elif spec.chart_type == "pie":
-        if spec.notes and len(frame) > 12 and isinstance(spec.y, str):
-            frame = _top_categories(frame, spec.x, spec.y)
-        figure = px.pie(frame, names=spec.x, values=spec.y, color_discrete_sequence=palette, custom_data=custom_data_fields, category_orders=category_orders)
-    elif spec.chart_type == "donut":
-        if spec.notes and len(frame) > 12 and isinstance(spec.y, str):
-            frame = _top_categories(frame, spec.x, spec.y)
-        figure = px.pie(frame, names=spec.x, values=spec.y, hole=0.45, color_discrete_sequence=palette, custom_data=custom_data_fields, category_orders=category_orders)
-    elif spec.chart_type == "box":
-        figure = px.box(frame, x=spec.x, y=spec.y, color_discrete_sequence=discrete_color, custom_data=custom_data_fields, category_orders=category_orders)
-    elif spec.chart_type == "heatmap":
-        if not isinstance(spec.y, str):
+    horizontal_bar = _should_use_horizontal_bar(plot_spec, frame)
+    if plot_spec.chart_type == "bar":
+        if horizontal_bar:
+            figure = px.bar(
+                frame,
+                x=plot_spec.y,
+                y=plot_spec.x,
+                orientation="h",
+                color_discrete_sequence=discrete_color,
+                custom_data=custom_data_fields,
+                category_orders=category_orders,
+            )
+        else:
+            figure = px.bar(frame, x=plot_spec.x, y=plot_spec.y, color_discrete_sequence=discrete_color, custom_data=custom_data_fields, category_orders=category_orders)
+    elif plot_spec.chart_type == "line":
+        figure = px.line(frame, x=plot_spec.x, y=plot_spec.y, color_discrete_sequence=discrete_color, custom_data=custom_data_fields, category_orders=category_orders)
+    elif plot_spec.chart_type == "scatter":
+        figure = px.scatter(frame, x=plot_spec.x, y=plot_spec.y, color_discrete_sequence=discrete_color, custom_data=custom_data_fields, category_orders=category_orders)
+    elif plot_spec.chart_type == "histogram":
+        figure = px.histogram(frame, x=plot_spec.x, color_discrete_sequence=discrete_color)
+    elif plot_spec.chart_type == "pie":
+        if plot_spec.notes and len(frame) > 12 and isinstance(plot_spec.y, str):
+            frame = _top_categories(frame, plot_spec.x, plot_spec.y)
+        figure = px.pie(frame, names=plot_spec.x, values=plot_spec.y, color_discrete_sequence=palette, custom_data=custom_data_fields, category_orders=category_orders)
+    elif plot_spec.chart_type == "donut":
+        if plot_spec.notes and len(frame) > 12 and isinstance(plot_spec.y, str):
+            frame = _top_categories(frame, plot_spec.x, plot_spec.y)
+        figure = px.pie(frame, names=plot_spec.x, values=plot_spec.y, hole=0.45, color_discrete_sequence=palette, custom_data=custom_data_fields, category_orders=category_orders)
+    elif plot_spec.chart_type == "box":
+        figure = px.box(frame, x=plot_spec.x, y=plot_spec.y, color_discrete_sequence=discrete_color, custom_data=custom_data_fields, category_orders=category_orders)
+    elif plot_spec.chart_type == "heatmap":
+        if not isinstance(plot_spec.y, str):
             raise ValueError("Heatmaps require one y field")
         figure = px.density_heatmap(
             frame,
-            x=spec.x,
-            y=spec.y,
+            x=plot_spec.x,
+            y=plot_spec.y,
             color_continuous_scale=[style.colors.get("accent_soft", style.colors["surface"]), style.colors["accent"]],
         )
     else:
         raise ValueError(f"Unsupported chart type: {spec.chart_type}")
-    _apply_layout_policy(figure, style, spec, frame, prepared, display_note)
-    _apply_trace_policy(figure, style, spec, frame)
-    x_axis_title = _axis_title(spec, "x", temporal=prepared.temporal)
-    y_axis_title = _axis_title(spec, "y", temporal=prepared.temporal)
-    x_numeric = _is_numeric_column(frame, spec.x)
-    y_numeric = _is_numeric_column(frame, spec.y)
-    x_tickformat = _axis_number_format(spec, frame[spec.x]) if x_numeric else None
-    y_tickformat = _axis_number_format(spec, frame[spec.y]) if y_numeric and isinstance(spec.y, str) else None
+    _apply_layout_policy(figure, style, spec, frame, prepared, display_note, _chart_title(analysis, spec))
+    _apply_trace_policy(figure, style, plot_spec, frame)
+    plotted_x = plot_spec.y if horizontal_bar else plot_spec.x
+    plotted_y = plot_spec.x if horizontal_bar else plot_spec.y
+    x_axis_role = "y" if horizontal_bar else "x"
+    y_axis_role = "x" if horizontal_bar else "y"
+    x_axis_title = _axis_title(spec, x_axis_role, temporal=prepared.temporal)
+    y_axis_title = _axis_title(spec, y_axis_role, temporal=prepared.temporal)
+    x_numeric = _is_numeric_column(frame, plotted_x)
+    y_numeric = _is_numeric_column(frame, plotted_y)
+    x_tickformat = _axis_number_format(spec, frame[plotted_x], axis=x_axis_role) if x_numeric and isinstance(plotted_x, str) else None
+    y_tickformat = _axis_number_format(spec, frame[plotted_y], axis=y_axis_role) if y_numeric and isinstance(plotted_y, str) else None
     _apply_axis_policy(
         figure,
         style,
-        spec,
+        plot_spec,
         prepared,
         x_axis_title=x_axis_title,
         y_axis_title=y_axis_title,
         x_tickformat=x_tickformat,
         y_tickformat=y_tickformat,
+        horizontal_bar=horizontal_bar,
     )
     _apply_hover_format(
         figure,
@@ -139,6 +155,7 @@ def render_chart(analysis: AnalysisResult, spec: ChartSpec, style: CompanyStyle)
         x_numeric=x_numeric,
         y_numeric=y_numeric,
         temporal_display_index=_temporal_display_index(spec, prepared),
+        horizontal_bar=horizontal_bar,
     )
     return figure
 
@@ -151,8 +168,12 @@ def _chart_palette(style: CompanyStyle) -> list[str]:
 
 def _custom_data_fields(spec: ChartSpec, prepared: _PreparedFrame) -> list[str] | None:
     fields: list[str] = []
-    if spec.identity_field:
+    if spec.identity_field and spec.identity_field in prepared.frame.columns:
         fields.append(spec.identity_field)
+    y_fields = {spec.y} if isinstance(spec.y, str) else set(spec.y or [])
+    for field in spec.label_fields:
+        if field in prepared.frame.columns and field not in fields and field not in {spec.x, *y_fields}:
+            fields.append(field)
     if prepared.temporal_display_field:
         fields.append(prepared.temporal_display_field)
     return fields or None
@@ -161,7 +182,44 @@ def _custom_data_fields(spec: ChartSpec, prepared: _PreparedFrame) -> list[str] 
 def _temporal_display_index(spec: ChartSpec, prepared: _PreparedFrame) -> int | None:
     if not prepared.temporal_display_field:
         return None
-    return 1 if spec.identity_field else 0
+    fields = _custom_data_fields(spec, prepared) or []
+    try:
+        return fields.index(prepared.temporal_display_field)
+    except ValueError:
+        return None
+
+
+def _safe_label_fields(frame: pd.DataFrame, spec: ChartSpec) -> list[str]:
+    """Keep only requested, human-readable identity fields for visible labels."""
+    requested = list(dict.fromkeys(spec.label_fields))
+    missing = [field for field in requested if field not in frame.columns]
+    if missing:
+        raise ValueError("Chart label fields are not present in the analysis result")
+    y_fields = {spec.y} if isinstance(spec.y, str) else set(spec.y or [])
+    safe: list[str] = []
+    for field in requested:
+        if field in y_fields or not _is_human_label_column(frame[field]):
+            continue
+        safe.append(field)
+    if len(safe) <= 1:
+        return safe
+    labels = frame[safe].fillna("").astype(str).agg(" · ".join, axis=1)
+    if labels.duplicated().any():
+        return []
+    return safe
+
+
+def _is_human_label_column(values: pd.Series) -> bool:
+    non_null = values.dropna()
+    if non_null.empty or pd.api.types.is_numeric_dtype(values) or pd.api.types.is_bool_dtype(values):
+        return False
+    if pd.api.types.is_datetime64_any_dtype(values):
+        return False
+    if not all(isinstance(value, str) for value in non_null):
+        return False
+    numeric_like_values = non_null.astype(str).str.strip().str.replace(r"[$€£¥,]", "", regex=True).str.rstrip("%")
+    numeric_like = pd.to_numeric(numeric_like_values, errors="coerce")
+    return not numeric_like.notna().all()
 
 
 def _prepare_plot_frame(frame: pd.DataFrame, spec: ChartSpec) -> _PreparedFrame:
@@ -225,6 +283,23 @@ def _chart_policy(spec: ChartSpec, temporal: bool) -> _ChartPolicy:
     return _CHART_POLICIES.get(spec.chart_type, _ChartPolicy("categorical"))
 
 
+def _should_use_horizontal_bar(spec: ChartSpec, frame: pd.DataFrame) -> bool:
+    """Use horizontal bars only when a ranked categorical result needs the room."""
+    if not _is_ranked_categorical_bar(spec, frame):
+        return False
+    labels = frame[spec.x].fillna("").astype(str) if isinstance(spec.x, str) else pd.Series(dtype=str)
+    return len(labels) > 10 or (not labels.empty and labels.str.len().max() > 24)
+
+
+def _chart_title(analysis: AnalysisResult, spec: ChartSpec) -> str:
+    """Suppress a chart title that merely repeats the submitted question."""
+    title = (spec.title or "").strip()
+    question = (analysis.question or "").strip()
+    if title and question and re.sub(r"[\s?.!]+$", "", title).casefold() == re.sub(r"[\s?.!]+$", "", question).casefold():
+        return ""
+    return spec.title
+
+
 def _chart_height(style: CompanyStyle, policy: _ChartPolicy) -> int:
     heights = style.layout.get("chart_heights", {})
     return int(heights.get(policy.height_key, style.layout.get("chart_height", 430)))
@@ -243,13 +318,14 @@ def _apply_layout_policy(
     frame: pd.DataFrame,
     prepared: _PreparedFrame,
     display_note: str | None,
+    title_text: str,
 ) -> None:
     policy = _chart_policy(spec, prepared.temporal)
     chart = style.layout.get("chart", {})
     circular = spec.chart_type in {"pie", "donut"}
     figure.update_layout(
         title={
-            "text": spec.title,
+            "text": title_text,
             "x": 0,
             "xanchor": "left",
             "y": 0.98,
@@ -271,7 +347,7 @@ def _apply_layout_policy(
             "font": {"family": style.fonts["sans"], "size": chart.get("hover_size", 12), "color": style.colors["ink"]},
         },
         showlegend=circular,
-        meta={"display_note": display_note},
+        meta={"display_note": display_note, "unit": _unit_kind(spec, axis="y")},
     )
     if circular:
         figure.update_layout(
@@ -297,6 +373,7 @@ def _apply_axis_policy(
     y_axis_title: str | None,
     x_tickformat: str | None,
     y_tickformat: str | None,
+    horizontal_bar: bool,
 ) -> None:
     if spec.chart_type in {"pie", "donut"}:
         return
@@ -311,22 +388,28 @@ def _apply_axis_policy(
         "tickcolor": style.colors["border"],
         "tickfont": {"family": style.fonts["sans"], "size": chart.get("axis_size", 11), "color": style.colors["muted"]},
     }
+    if horizontal_bar:
+        x_showgrid, x_showline, x_ticks, x_zeroline = policy.y_grid, policy.y_line, policy.y_ticks, policy.y_zeroline
+        y_showgrid, y_showline, y_ticks, y_zeroline = policy.x_grid, policy.x_line, policy.x_ticks, policy.x_zeroline
+    else:
+        x_showgrid, x_showline, x_ticks, x_zeroline = policy.x_grid, policy.x_line, policy.x_ticks, policy.x_zeroline
+        y_showgrid, y_showline, y_ticks, y_zeroline = policy.y_grid, policy.y_line, policy.y_ticks, policy.y_zeroline
     x_options = {
         **axis_common,
-        "showgrid": policy.x_grid,
-        "showline": policy.x_line,
-        "ticks": policy.x_ticks,
-        "zeroline": policy.x_zeroline,
+        "showgrid": x_showgrid,
+        "showline": x_showline,
+        "ticks": x_ticks,
+        "zeroline": x_zeroline,
         "tickformat": x_tickformat,
         "tickangle": 0,
         "title": {"text": x_axis_title or "", "font": {"size": chart.get("axis_size", 11), "color": style.colors["muted"]}},
     }
     y_options = {
         **axis_common,
-        "showgrid": policy.y_grid,
-        "showline": policy.y_line,
-        "ticks": policy.y_ticks,
-        "zeroline": policy.y_zeroline,
+        "showgrid": y_showgrid,
+        "showline": y_showline,
+        "ticks": y_ticks,
+        "zeroline": y_zeroline,
         "tickformat": y_tickformat,
         "title": {"text": y_axis_title or "", "font": {"size": chart.get("axis_size", 11), "color": style.colors["muted"]}},
     }
@@ -334,6 +417,8 @@ def _apply_axis_policy(
         x_options.update(type="date", tickformat=prepared.temporal_tickformat, nticks=6)
     figure.update_xaxes(**x_options)
     figure.update_yaxes(**y_options)
+    if horizontal_bar:
+        figure.update_yaxes(autorange="reversed")
     if spec.chart_type == "heatmap":
         figure.update_coloraxes(
             colorbar={
@@ -398,9 +483,14 @@ def _axis_title(spec: ChartSpec, axis: str, *, temporal: bool) -> str | None:
     return None
 
 
-def _unit_kind(spec: ChartSpec) -> str | None:
-    """Return a unit only when the spec states one explicitly."""
-    labels = " ".join(value for value in (spec.title, spec.y_label) if value)
+def _unit_kind(spec: ChartSpec, *, axis: str | None = None) -> str | None:
+    """Return a unit only when the relevant spec labels state one explicitly."""
+    if axis == "x":
+        labels = " ".join(value for value in (spec.x_label, spec.title if spec.chart_type == "histogram" else None) if value)
+    elif axis == "y":
+        labels = " ".join(value for value in (spec.title, spec.y_label) if value)
+    else:
+        labels = " ".join(value for value in (spec.title, spec.x_label, spec.y_label) if value)
     if not labels:
         return None
     if _EXPLICIT_CURRENCY.search(labels):
@@ -433,16 +523,16 @@ def _axis_precision(values: pd.Series) -> int:
     return 2
 
 
-def _axis_number_format(spec: ChartSpec, values: pd.Series) -> str:
-    unit = _unit_kind(spec)
+def _axis_number_format(spec: ChartSpec, values: pd.Series, *, axis: str) -> str:
+    unit = _unit_kind(spec, axis=axis)
     precision = _axis_precision(values)
     if unit == "percent":
         return f".{max(0, min(1, precision))}%"
     return f"{_unit_prefix(unit)},.{precision}f"
 
 
-def _hover_number_format(spec: ChartSpec) -> str:
-    unit = _unit_kind(spec)
+def _hover_number_format(spec: ChartSpec, *, axis: str) -> str:
+    unit = _unit_kind(spec, axis=axis)
     if unit == "percent":
         return ".2%"
     return f"{_unit_prefix(unit)},.2f"
@@ -497,17 +587,23 @@ def _apply_hover_format(
     x_numeric: bool,
     y_numeric: bool,
     temporal_display_index: int | None,
+    horizontal_bar: bool,
 ) -> None:
-    number_format = _hover_number_format(spec)
-    x_value = f"%{{x:{number_format}}}" if x_numeric else "%{x}"
-    if temporal_display_index is not None:
+    x_number_format = _hover_number_format(spec, axis="y" if horizontal_bar else "x")
+    y_number_format = _hover_number_format(spec, axis="x" if horizontal_bar else "y")
+    x_value = f"%{{x:{x_number_format}}}" if x_numeric else "%{x}"
+    if temporal_display_index is not None and not horizontal_bar:
         x_value = f"%{{customdata[{temporal_display_index}]}}"
-    y_value = f"%{{y:{number_format}}}" if y_numeric else "%{y}"
-    x_label = x_axis_title or spec.x or "Value"
-    y_label = spec.y_label or spec.y or "Value"
+    y_value = f"%{{y:{y_number_format}}}" if y_numeric else "%{y}"
+    if horizontal_bar:
+        x_label = spec.y_label or spec.y or "Value"
+        y_label = spec.x_label or spec.x or "Category"
+    else:
+        x_label = x_axis_title or spec.x or "Value"
+        y_label = spec.y_label or spec.y or "Value"
 
     if spec.chart_type in {"pie", "donut"}:
-        figure.update_traces(hovertemplate=f"{x_label}=%{{label}}<br>{y_label}=%{{value:{number_format}}}<extra></extra>")
+        figure.update_traces(hovertemplate=f"{x_label}=%{{label}}<br>{y_label}=%{{value:{y_number_format}}}<extra></extra>")
     elif spec.chart_type == "heatmap":
         figure.update_traces(hovertemplate=f"{x_label}=%{{x}}<br>{y_label}=%{{y}}<br>Count=%{{z:,.0f}}<extra></extra>")
     elif spec.chart_type == "histogram":

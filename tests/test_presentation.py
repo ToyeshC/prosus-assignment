@@ -1,5 +1,5 @@
 from analytics_command_center.models import AnalysisResult, ChartSpec
-from analytics_command_center.presentation import format_result_scope
+from analytics_command_center.presentation import format_result_scope, prepare_summary_display
 
 
 def _analysis(*, columns, rows, row_count=0, truncated=False):
@@ -38,6 +38,23 @@ def test_result_scope_falls_back_to_a_neutral_row_count_without_a_display_label(
     analysis = _analysis(columns=["value"], rows=[{"value": 10}, {"value": 20}], row_count=2)
 
     assert format_result_scope(analysis, ChartSpec(chart_type="bar", x="value", y="value", title="Values")) == "2 rows"
+
+
+def test_summary_display_escapes_model_markup_and_uses_body_mode_for_long_lists():
+    summary = "Beverages generated the most sales, followed by Dairy Products.\n* Keep the supplied result scope."
+
+    mode, html = prepare_summary_display(summary)
+
+    assert mode == "body"
+    assert "* Keep" in html
+    assert "<em>" not in html
+    assert "<br>" in html
+
+
+def test_summary_display_uses_body_mode_for_comma_separated_rankings():
+    mode, _ = prepare_summary_display("USA (523.06), Canada (303.96), France (195.10), Brazil (190.10), Germany (156.48).")
+
+    assert mode == "body"
 
 
 def test_result_scope_marks_truncated_output_as_bounded():

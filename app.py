@@ -11,7 +11,7 @@ import yaml
 
 from analytics_command_center.errors import AccessDenied, ConfigurationError, safe_live_error
 from analytics_command_center.models import AnalysisRequest
-from analytics_command_center.presentation import format_result_scope
+from analytics_command_center.presentation import format_result_scope, prepare_summary_display
 from analytics_command_center.rendering import CompanyStyle, render_chart
 from analytics_command_center.runtime import analytics_service, config_store, project_root
 from analytics_command_center.visualization_capabilities import QUICK_CHOICES
@@ -185,8 +185,10 @@ st.markdown(
     .analysis-loading h2 {{ margin: 0; font-size: 20px; letter-spacing: -.028em; font-weight: 670; }}
     .analysis-loading p {{ margin: 5px 0 0; color: {COLORS['muted']}; font-size: 14px; }}
     .st-key-result-workspace {{ margin: 0; }}
-    .st-key-answer-summary [data-testid='stMarkdownContainer'] > :first-child {{ max-width: 720px; margin-top: 0; font-size: 1.75rem; line-height: 1.2; letter-spacing: -.035em; font-weight: 680; text-wrap: balance; }}
-    .st-key-answer-summary [data-testid='stMarkdownContainer'] p {{ max-width: 720px; line-height: 1.55; }}
+    .st-key-answer-summary .analysis-summary {{ max-width: 720px; margin: 0; }}
+    .st-key-answer-summary .analysis-summary p {{ margin: 0; max-width: 720px; color: {COLORS['ink']}; }}
+    .st-key-answer-summary .analysis-summary.headline p {{ font-size: 1.75rem; line-height: 1.2; letter-spacing: -.035em; font-weight: 680; text-wrap: balance; }}
+    .st-key-answer-summary .analysis-summary.body p {{ font-size: 1.08rem; line-height: 1.5; letter-spacing: -.005em; font-weight: 500; text-wrap: pretty; }}
     .st-key-answer-summary [data-testid='stMarkdownContainer'] ul {{ margin-top: .7rem; padding-left: 1.25rem; }}
     .st-key-result-workspace .scope-context {{ margin-top: .7rem; margin-bottom: 1.8rem; color: {COLORS['muted']}; font-size: .82rem; font-weight: 500; }}
     .st-key-result-workspace .scope-context strong {{ color: {COLORS['control_ink']}; font-weight: 650; }}
@@ -462,7 +464,11 @@ def _render_result(database: dict) -> None:
         answer_tab, data_tab, details_tab = st.tabs(["Answer", "Data", "Run details"])
         with answer_tab:
             with st.container(key="answer-summary"):
-                st.write(result.analysis.summary)
+                summary_mode, summary_html = prepare_summary_display(result.analysis.summary)
+                st.markdown(
+                    f"<div class='analysis-summary {summary_mode}'><p>{summary_html}</p></div>",
+                    unsafe_allow_html=True,
+                )
             st.markdown(
                 f"<p class='scope-context'><strong>{database['display_name']}</strong> · {format_result_scope(result.analysis, result.chart_spec)}</p>",
                 unsafe_allow_html=True,
