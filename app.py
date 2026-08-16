@@ -166,6 +166,8 @@ st.markdown(
     [data-testid='stTabs'] [data-baseweb='tab-list'] {{ gap: 1.25rem; border-bottom: 1px solid {COLORS['border']}; }}
     [data-testid='stTabs'] [data-baseweb='tab'] {{ padding-left: 0; padding-right: 0; }}
     [data-testid='stPlotlyChart'], [data-testid='stPlotlyChart'] > div {{ background: transparent; border: 0; box-shadow: none; }}
+    .st-key-result-workspace [data-testid='stCaptionContainer'] {{ margin-top: .45rem; margin-bottom: 0; color: {COLORS['muted']}; font-size: .75rem; line-height: 1.4; }}
+    .st-key-result-workspace [data-testid='stCaptionContainer'] p {{ margin: 0; color: {COLORS['muted']}; }}
     .st-key-example-row {{ margin-top: 1rem; }}
     .st-key-example-row [data-testid='stHorizontalBlock'] {{ display: flex !important; justify-content: flex-start; align-items: baseline !important; gap: 15px !important; }}
     .st-key-example-row [data-testid='stColumn'] {{ flex: 0 0 auto !important; width: auto !important; min-width: 0 !important; }}

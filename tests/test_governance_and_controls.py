@@ -337,7 +337,8 @@ def test_entity_identity_normalization_does_not_change_distribution_or_temporal_
     assert histogram and histogram.chart_type == "histogram" and histogram.label_fields == []
     assert line and line.chart_type == "line" and line.label_fields == []
     figure = render_chart(temporal, line, CompanyStyle(Path(__file__).parents[1] / "config" / "company_style.yaml"))
-    assert list(figure.data[0].x) == ["2024-01", "2024-02"]
+    assert [str(value)[:7] for value in figure.data[0].x] == ["2024-01", "2024-02"]
+    assert temporal.rows == [{"month": "2024-01", "revenue": 10.0}, {"month": "2024-02", "revenue": 20.0}]
 
 
 def test_distribution_lens_changes_customer_observations_to_distribution_chart(store, tmp_path):

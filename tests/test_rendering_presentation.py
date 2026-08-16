@@ -20,14 +20,24 @@ def _bar_spec(*, x="country", y="revenue", sort="descending", **kwargs):
     return ChartSpec(chart_type="bar", x=x, y=y, title="Revenue", sort=sort, **kwargs)
 
 
-def test_renderer_formats_decimal_hover_values_without_mutating_analysis():
+def test_renderer_formats_decimal_hover_values_without_inferring_currency():
     value = 39.899999999999996
     analysis = _analysis(columns=["country", "revenue"], rows=[{"country": "USA", "revenue": value}])
 
     figure = render_chart(analysis, _bar_spec(), _style())
 
-    assert "$,.2f" in figure.data[0].hovertemplate
+    assert "revenue=%{y:,.2f}" in figure.data[0].hovertemplate
+    assert "$" not in figure.data[0].hovertemplate
     assert analysis.rows[0]["revenue"] == value
+
+
+def test_renderer_uses_currency_format_only_for_explicit_unit():
+    analysis = _analysis(columns=["country", "revenue"], rows=[{"country": "USA", "revenue": 39.899999999999996}])
+    spec = _bar_spec(y="revenue", y_label="Revenue (USD)")
+
+    figure = render_chart(analysis, spec, _style())
+
+    assert "Revenue (USD)=%{y:$,.2f}" in figure.data[0].hovertemplate
 
 
 def test_ranked_categorical_bar_uses_top_twelve_display_rows_only():

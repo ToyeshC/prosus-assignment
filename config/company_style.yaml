@@ -17,6 +17,12 @@ colors:
   accent_muted: "#A9BEE6"
   dot: "rgba(22, 24, 29, .035)"
   accent_faint: "#9EB7E5"
+  chart_palette:
+    - "#315EA8"
+    - "#6F93D4"
+    - "#244D90"
+    - "#A9BEE6"
+    - "#4F78BB"
   success: "#28785A"
   error: "#B42318"
 fonts:
@@ -24,4 +30,30 @@ fonts:
   mono: "SFMono-Regular, Consolas, Liberation Mono, monospace"
 layout:
   border_radius: 6
-  chart_height: 430
+  chart_height: 360
+  chart_heights:
+    categorical: 340
+    temporal: 360
+    distribution: 340
+    heatmap: 380
+    pie: 340
+  chart_margins:
+    standard:
+      l: 56
+      r: 18
+      t: 44
+      b: 42
+    compact:
+      l: 18
+      r: 18
+      t: 44
+      b: 24
+  chart:
+    title_size: 15
+    axis_size: 11
+    hover_size: 12
+    line_width: 2.25
+    marker_size: 7
+    dense_marker_size: 3
+    scatter_marker_size: 8
+    box_marker_size: 5
